@@ -179,7 +179,11 @@ shinyServer(function(input, output, session) {
                         color = "#666",
                         fillColor = ~pal(yoko_shp@data$count),
                         label = paste0(yoko_shp@data$N03_004,yoko_shp@data$count)
-            )
+            )%>%
+            addLegend(pal=pal,
+                      values = c(0,350),
+                      position="bottomright",
+                      opacity = 1)
     })
     output$covid_map2 <- renderLeaflet({
         date1<-lubridate::ymd(input$x)-as.numeric(input$y)+1
@@ -210,11 +214,11 @@ shinyServer(function(input, output, session) {
             sp::merge(shp.new, jinko3,
                       by="N03_004", all=F,duplicateGeoms = TRUE)
         # #色設定
-        pal <- colorNumeric(palette=c("white","red"),domain=c(0,as.numeric(input$y)*30), reverse=F)
+        pal <- colorNumeric(palette=c("white","red"),domain=c(0,as.numeric(input$y)*20), reverse=F)
         pal2<-
             data7.2%>%
             mutate(col=pal(count_j),
-                   col2=ifelse(count_j>as.numeric(input$y)*30,"red",col))
+                   col2=ifelse(count_j>as.numeric(input$y)*20,"red",col))
 
         leaflet(data7.2) %>%
             fitBounds(lng1=139.124343, lat1=35.117843, lng2=139.652899, lat2=35.665052)%>%
@@ -231,7 +235,7 @@ shinyServer(function(input, output, session) {
                           arrange(count_j),
                       position="bottomright",
                       pal=pal,
-                      values = c(0,as.numeric(input$y)*30),
+                      values = c(0,as.numeric(input$y)*20),
                       #color=~col2,labels=~flag,opacity = 1,
                       #labFormat = labelFormat(transform = function(x)x*x)
             )%>%
@@ -246,7 +250,7 @@ shinyServer(function(input, output, session) {
         yoko_shp2<-
             sp::merge(shp, data2,
                       by=c("N03_004","N03_003"), all=F,duplicateGeoms = TRUE)
-        pal <- colorNumeric(palette=c("white","red"),domain=c(0,210), reverse=F)
+        pal <- colorNumeric(palette=c("white","red"),domain=c(0,140), reverse=F)
         yoko_shp2%>%
             leaflet() %>%
             #fitBounds(lng1=139.124343, lat1=35.117843, lng2=139.652899, lat2=35.665052)%>% 
@@ -257,7 +261,11 @@ shinyServer(function(input, output, session) {
                         color = "#666",
                         fillColor = ~pal(yoko_shp2@data$count_j),
                         label = paste0(yoko_shp2@data$N03_004,yoko_shp2@data$count_j)
-            )
+            )%>%
+            addLegend(pal=pal,
+                      values = c(0,140),
+                      position="bottomright",
+                      opacity = 1)
         
     })
     # output$text<-
