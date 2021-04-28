@@ -64,7 +64,7 @@ shinyServer(function(input, output, session) {
         read.csv("https://square.umin.ac.jp/kenkono/csv/ward-new.csv",
                  encoding = "UTF-8",
                  header = F)
-    str(yoko)
+    
     yoko2<-
         yoko%>%
         filter(V1!="",V1!="区名")%>%
@@ -92,9 +92,34 @@ shinyServer(function(input, output, session) {
         filter(!name%in%c("日本","横浜市","市外","調査中","神奈川県"))%>%
         rename("N03_004"="name")%>%
         mutate(count=as.numeric(count))%>%
-        filter(date=="4/16~4/22")%>%
+        #filter(date=="4/16~4/22")%>%
         mutate(N03_003="横浜市")
+    day1<-
+        reactive({
+            data%>%
+                filter(year==input$year1)%>%
+                distinct(date)
+        })
     
+    output$date2<-
+        renderUI({
+            selectInput("d2","日付を選択してください。",
+                        choices=day1()
+            )
+        })
+    day2<-
+        reactive({
+            data%>%
+                filter(year==input$year2)%>%
+                distinct(date)
+        })
+    
+    output$date3<-
+        renderUI({
+            selectInput("d3","日付を選択してください。",
+                        choices=day2()
+            )
+        })
     layers <- ogrListLayers("N03-190101_14_GML/N03-19_14_190101.shp")
     Encoding(layers[1]) <- "UTF-8"
     shp <- readOGR("N03-190101_14_GML/N03-19_14_190101.shp", layer=layers[1],
@@ -138,7 +163,8 @@ shinyServer(function(input, output, session) {
                                col2=ifelse(count>300*as.numeric(input$y),"red",col),
                                col2=ifelse(N03_004=="横浜市","gray",col2))
                     leaflet(data7.2) %>%
-                        setView(lng=139.424343, lat=35.417843,zoom=10)%>%
+                        fitBounds(lng1=139.124343, lat1=35.117843, lng2=139.652899, lat2=35.665052)%>%
+                        #setView(lng=139.424343, lat=35.417843,zoom=10)%>%
                         addProviderTiles(providers$CartoDB.Positron)%>%
                         addPolygons(
                                     fillOpacity = 1,
@@ -166,7 +192,9 @@ shinyServer(function(input, output, session) {
     )
     output$yoko_map<-renderLeaflet({
         yoko_shp<-
-            sp::merge(shp, data,
+            sp::merge(shp, data%>%
+                          filter(year==input$year1,date%in%input$d2)
+                      ,
                       by=c("N03_004","N03_003"), all=F,duplicateGeoms = TRUE)
         pal <- colorNumeric(palette=c("white","red"),domain=c(0,350), reverse=F)
         yoko_shp%>%
@@ -245,7 +273,9 @@ shinyServer(function(input, output, session) {
     })
     output$yoko_map2<-renderLeaflet({
         data2<-
-            left_join(data,jinko,by=c("N03_004"="City"))%>%
+            left_join(data%>%
+                          filter(year==input$year2,date%in%input$d3),
+                      jinko,by=c("N03_004"="City"))%>%
             mutate(count_j=round(count/jinko*100000,2))
         yoko_shp2<-
             sp::merge(shp, data2,
