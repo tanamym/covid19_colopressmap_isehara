@@ -107,23 +107,8 @@ shinyServer(function(input, output, session) {
                         choices=day1()
             )
         })
-    day2<-
-        reactive({
-            data%>%
-                filter(year==input$year2)%>%
-                distinct(date)
-        })
-    
-    output$date3<-
-        renderUI({
-            selectInput("d3","日付を選択してください。",
-                        choices=day2()
-            )
-        })
-    layers <- ogrListLayers("N03-190101_14_GML/N03-19_14_190101.shp")
-    Encoding(layers[1]) <- "UTF-8"
-    shp <- readOGR("N03-190101_14_GML/N03-19_14_190101.shp", layer=layers[1],
-                   stringsAsFactors = FALSE, encoding = "UTF-8")
+    shp <-read_sf("N03-190101_14_GML/N03-19_14_190101.shp",options = "ENCODING=CP932") 
+
     
     output$covid_map <- renderLeaflet({
                      date1<-lubridate::ymd(input$x)-as.numeric(input$y)+1
@@ -163,7 +148,7 @@ shinyServer(function(input, output, session) {
                                col2=ifelse(count>300*as.numeric(input$y),"red",col),
                                col2=ifelse(N03_004=="横浜市","gray",col2))
                     leaflet(data7.2) %>%
-                        fitBounds(lng1=139.124343, lat1=35.117843, lng2=139.652899, lat2=35.665052)%>%
+                        fitBounds(lng1=139.224343, lat1=35.217843, lng2=139.552899, lat2=35.565052)%>%
                         #setView(lng=139.424343, lat=35.417843,zoom=10)%>%
                         addProviderTiles(providers$CartoDB.Positron)%>%
                         addPolygons(
@@ -200,18 +185,19 @@ shinyServer(function(input, output, session) {
         yoko_shp%>%
             leaflet() %>%
             #fitBounds(lng1=139.124343, lat1=35.117843, lng2=139.652899, lat2=35.665052)%>% 
-            setView(lng=139.604343, lat=35.4547843,zoom=11)%>%
+            setView(lng=139.604343, lat=35.4547843,zoom=10)%>%
             addProviderTiles(providers$CartoDB.Positron) %>% 
             addPolygons(fillOpacity = 1,
                         weight=1,
                         color = "#666",
-                        fillColor = ~pal(yoko_shp@data$count),
-                        label = paste0(yoko_shp@data$N03_004,yoko_shp@data$count)
+                        fillColor = ~pal(yoko_shp$count),
+                        label = paste0(yoko_shp$N03_004,yoko_shp$count)
             )%>%
             addLegend(pal=pal,
                       values = c(0,350),
                       position="bottomright",
-                      opacity = 1)
+                      opacity = 1)%>%
+            addControl(tags$div(HTML(input$d2))  , position = "topright")
     })
     output$covid_map2 <- renderLeaflet({
         date1<-lubridate::ymd(input$x)-as.numeric(input$y)+1
@@ -249,7 +235,7 @@ shinyServer(function(input, output, session) {
                    col2=ifelse(count_j>as.numeric(input$y)*20,"red",col))
 
         leaflet(data7.2) %>%
-            fitBounds(lng1=139.124343, lat1=35.117843, lng2=139.652899, lat2=35.665052)%>%
+            fitBounds(lng1=139.224343, lat1=35.217843, lng2=139.552899, lat2=35.565052)%>%
             addProviderTiles(providers$CartoDB.Positron) %>%
             addPolygons(fillOpacity = 1,
                         weight=1,
@@ -274,7 +260,7 @@ shinyServer(function(input, output, session) {
     output$yoko_map2<-renderLeaflet({
         data2<-
             left_join(data%>%
-                          filter(year==input$year2,date%in%input$d3),
+                          filter(year==input$year1,date%in%input$d2),
                       jinko,by=c("N03_004"="City"))%>%
             mutate(count_j=round(count/jinko*100000,2))
         yoko_shp2<-
@@ -284,18 +270,19 @@ shinyServer(function(input, output, session) {
         yoko_shp2%>%
             leaflet() %>%
             #fitBounds(lng1=139.124343, lat1=35.117843, lng2=139.652899, lat2=35.665052)%>% 
-            setView(lng=139.604343, lat=35.457843,zoom=11)%>%
+            setView(lng=139.604343, lat=35.457843,zoom=10)%>%
             addProviderTiles(providers$CartoDB.Positron) %>% 
             addPolygons(fillOpacity = 1,
                         weight=1,
                         color = "#666",
-                        fillColor = ~pal(yoko_shp2@data$count_j),
-                        label = paste0(yoko_shp2@data$N03_004,yoko_shp2@data$count_j)
+                        fillColor = ~pal(yoko_shp2$count_j),
+                        label = paste0(yoko_shp2$N03_004,yoko_shp2$count_j)
             )%>%
             addLegend(pal=pal,
                       values = c(0,140),
                       position="bottomright",
-                      opacity = 1)
+                      opacity = 1)%>%
+            addControl(tags$div(HTML(input$d2))  , position = "topright")
         
     })
     # output$text<-
