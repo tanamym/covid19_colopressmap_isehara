@@ -1,7 +1,8 @@
 library(dplyr)
 #library(htmltools)
-library(rgdal)
+#library(rgdal)
 library(sf)
+library(stringr)
 shinyServer(function(input, output, session) {
     data7<-
         read.csv("coviddata.csv",fileEncoding = "sJIS")%>%
@@ -39,27 +40,27 @@ shinyServer(function(input, output, session) {
     #                )
 
     shp<-
-        read_sf("N03-190101_14_GML/N03-19_14_190101_2.shp",options = "ENCODING=CP932")
-    shp1<-
-        shp %>% filter(N03_003 %in% c("横浜市")) %>%
-        aggregate(by = list(.$N03_003), FUN = "head", n=1) %>%
-        select(-1) %>% 
-        mutate(N03_004 = N03_003,
-               N03_007 = "14100")
-    head(shp1)
-    shp2<-
-        shp %>% filter(N03_003 %in% c("相模原市")) %>%
-        aggregate(by = list(.$N03_003), FUN = "head", n=1) %>%
-        select(-1) %>% 
-        mutate(N03_004 = N03_003,
-               N03_007 = "14150")
-    shp3<-
-        shp%>%
-        filter(!N03_003 %in% c("横浜市","相模原市"))
-    shp.new<-
-        rbind(shp1,shp2,shp3)%>% 
-        arrange(N03_007)
-    head(shp.new)
+        read_sf("N03-190101_14_GML/N03-19_14_190101_2.shp",options = "ENCODING=sJIS")
+    # shp1<-
+    #     shp %>% filter(N03_003 %in% c("横浜市")) %>%
+    #     aggregate(by = list(.$N03_003), FUN = "head", n=1) %>%
+    #     select(-1) %>% 
+    #     mutate(N03_004 = N03_003,
+    #            N03_007 = "14100")
+    # head(shp1)
+    # shp2<-
+    #     shp %>% filter(N03_003 %in% c("相模原市")) %>%
+    #     aggregate(by = list(.$N03_003), FUN = "head", n=1) %>%
+    #     select(-1) %>% 
+    #     mutate(N03_004 = N03_003,
+    #            N03_007 = "14150")
+    # shp3<-
+    #     shp%>%
+    #     filter(!N03_003 %in% c("横浜市","相模原市"))
+    # shp.new<-
+    #     rbind(shp1,shp2,shp3)%>% 
+    #     arrange(N03_007)
+    head(shp)
     yoko<-
         read.csv("https://square.umin.ac.jp/kenkono/csv/ward-new.csv",
                  encoding = "UTF-8",
@@ -93,7 +94,17 @@ shinyServer(function(input, output, session) {
         rename("N03_004"="name")%>%
         mutate(count=as.numeric(count))%>%
         #filter(date=="4/16~4/22")%>%
-        mutate(N03_003="横浜市")
+        mutate(N03_003="横浜市")%>%
+        mutate(start=str_replace(date,"~.+",""),
+               end=str_replace(date,".*~",""))%>%
+        mutate(end=str_replace(end," .+",""))%>%
+        mutate(year2=str_replace(year,"年",""))%>%
+        mutate(start=str_replace(start,"/","-"),
+               end=str_replace(end,"/","-"),
+               start=paste0(year2,"-",start),
+               end=paste0(year2,"-",end),
+               start=lubridate::ymd(start),
+               end=lubridate::ymd(end))
     day1<-
         reactive({
             data%>%
@@ -107,7 +118,7 @@ shinyServer(function(input, output, session) {
                         choices=day1()
             )
         })
-    shp <-read_sf("N03-190101_14_GML/N03-19_14_190101.shp",options = "ENCODING=CP932") 
+    shp2 <-read_sf("N03-190101_14_GML/N03-19_14_190101.shp",options = "ENCODING=CP932") 
 
     
     output$covid_map <- renderLeaflet({
@@ -136,7 +147,7 @@ shinyServer(function(input, output, session) {
                         data7.1%>%
                         mutate(sum=s)
                     data7.2<-
-                        sp::merge(shp.new, data7.1,
+                        sp::merge(shp, data7.1,
                                   by="N03_004", all=F,duplicateGeoms = TRUE)
                     head(data7.2)
                     pal <- colorNumeric(palette=c("white","red"),domain=c(0,as.numeric(input$y)*50), reverse=F)
@@ -176,11 +187,19 @@ shinyServer(function(input, output, session) {
     }
     )
     output$yoko_map<-renderLeaflet({
+        data1<-data%>%
+            dplyr::filter(end<=lubridate::ymd(input$x),
+                          start<=lubridate::ymd(input$x)-6,
+                          lubridate::ymd(input$x)-6<=end)
+        # data%>%
+        #     dplyr::filter(end<=lubridate::ymd("2021-04-22"),
+        #                   start<=lubridate::ymd("2021-04-22")-6,
+        #                   lubridate::ymd("2021-04-22")-6<=end)
         yoko_shp<-
-            sp::merge(shp, data%>%
-                          filter(year==input$year1,date%in%input$d2)
-                      ,
+            sp::merge(shp2, data1,
+                          #filter(year==input$year1,date%in%input$d2)
                       by=c("N03_004","N03_003"), all=F,duplicateGeoms = TRUE)
+
         pal <- colorNumeric(palette=c("white","red"),domain=c(0,350), reverse=F)
         yoko_shp%>%
             leaflet() %>%
@@ -197,7 +216,7 @@ shinyServer(function(input, output, session) {
                       values = c(0,350),
                       position="bottomright",
                       opacity = 1)%>%
-            addControl(tags$div(HTML(input$d2))  , position = "topright")
+            addControl(tags$div(HTML(unique(yoko_shp$date)))  , position = "topright")
     })
     output$covid_map2 <- renderLeaflet({
         date1<-lubridate::ymd(input$x)-as.numeric(input$y)+1
@@ -225,7 +244,7 @@ shinyServer(function(input, output, session) {
             jinko3%>%
             mutate(sum=s$sum)
         data7.2<-
-            sp::merge(shp.new, jinko3,
+            sp::merge(shp, jinko3,
                       by="N03_004", all=F,duplicateGeoms = TRUE)
         # #色設定
         pal <- colorNumeric(palette=c("white","red"),domain=c(0,as.numeric(input$y)*20), reverse=F)
@@ -258,13 +277,17 @@ shinyServer(function(input, output, session) {
             addMarkers(139.313644,35.407144, label = "東海大学伊勢原キャンパス")
     })
     output$yoko_map2<-renderLeaflet({
+        data1<-data%>%
+            dplyr::filter(end<=lubridate::ymd(input$x),
+                          start<=lubridate::ymd(input$x)-6,
+                          lubridate::ymd(input$x)-6<=end)
         data2<-
-            left_join(data%>%
-                          filter(year==input$year1,date%in%input$d2),
+            left_join(data1,#%>%
+                          #filter(year==input$year1,date%in%input$d2),
                       jinko,by=c("N03_004"="City"))%>%
             mutate(count_j=round(count/jinko*100000,2))
         yoko_shp2<-
-            sp::merge(shp, data2,
+            sp::merge(shp2, data2,
                       by=c("N03_004","N03_003"), all=F,duplicateGeoms = TRUE)
         pal <- colorNumeric(palette=c("white","red"),domain=c(0,140), reverse=F)
         yoko_shp2%>%
@@ -282,7 +305,7 @@ shinyServer(function(input, output, session) {
                       values = c(0,140),
                       position="bottomright",
                       opacity = 1)%>%
-            addControl(tags$div(HTML(input$d2))  , position = "topright")
+            addControl(tags$div(HTML(unique(yoko_shp2$date))), position = "topright")
         
     })
     # output$text<-
