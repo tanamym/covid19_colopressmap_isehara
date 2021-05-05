@@ -41,6 +41,8 @@ shinyServer(function(input, output, session) {
 
     shp<-
         read_sf("N03-190101_14_GML/N03-19_14_190101_2.shp",options = "ENCODING=sJIS")
+    head(shp%>%
+             filter(N03_003 %in% c("川崎市")))
     # shp1<-
     #     shp %>% filter(N03_003 %in% c("横浜市")) %>%
     #     aggregate(by = list(.$N03_003), FUN = "head", n=1) %>%
@@ -149,7 +151,7 @@ shinyServer(function(input, output, session) {
                     data7.2<-
                         sp::merge(shp, data7.1,
                                   by="N03_004", all=F,duplicateGeoms = TRUE)
-                    head(data7.2)
+
                     pal <- colorNumeric(palette=c("white","red"),domain=c(0,as.numeric(input$y)*50), reverse=F)
                     
                     
@@ -191,10 +193,7 @@ shinyServer(function(input, output, session) {
             dplyr::filter(end<=lubridate::ymd(input$x),
                           start<=lubridate::ymd(input$x)-6,
                           lubridate::ymd(input$x)-6<=end)
-        # data%>%
-        #     dplyr::filter(end<=lubridate::ymd("2021-04-22"),
-        #                   start<=lubridate::ymd("2021-04-22")-6,
-        #                   lubridate::ymd("2021-04-22")-6<=end)
+       
         yoko_shp<-
             sp::merge(shp2, data1,
                           #filter(year==input$year1,date%in%input$d2)
