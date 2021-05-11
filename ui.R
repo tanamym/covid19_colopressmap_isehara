@@ -1,5 +1,10 @@
-
+if (!require(shiny)) {
+    install.packages("shiny")
+}
 library(shiny)
+if (!require(leaflet)) {
+    install.packages("leaflet")
+}
 library(leaflet)
 shinyUI(fluidPage(
     # Application title

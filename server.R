@@ -1,8 +1,31 @@
+if (!require(dplyr)) {
+    install.packages("dplyr")
+}
 library(dplyr)
-#library(htmltools)
-#library(rgdal)
+if (!require(sf)) {
+    install.packages("sf")
+}
 library(sf)
+if (!require(stringr)) {
+    install.packages("stringr")
+}
 library(stringr)
+if(!require(lubridate)){
+    install.packages("lubridate")
+}
+library(lubridate)
+if(!require(tidyr)){
+    install.packages("tidyr")
+}
+library(tidyr)
+if(!require(htmltools)){
+    install.packages("htmltools")
+}
+library(htmltools)
+if(!require(sp)){
+    install.packages("sp")
+}
+library(sp)
 shinyServer(function(input, output, session) {
     data7<-
         read.csv("coviddata.csv",fileEncoding = "sJIS")%>%
@@ -126,7 +149,7 @@ shinyServer(function(input, output, session) {
     shp2 <-read_sf("N03-190101_14_GML/N03-19_14_190101.shp",options = "ENCODING=CP932") 
 
     tetudo<-
-        read_sf("C:/R/data/covid/covid/N02-19_GML/N02-19_Station.shp",options = "ENCODING=CP932")
+        read_sf("N02-19_GML/N02-19_Station.shp",options = "ENCODING=CP932")
     
     output$covid_map <- renderLeaflet({
         x<-input$x
