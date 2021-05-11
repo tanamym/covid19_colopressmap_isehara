@@ -8,16 +8,6 @@ shinyServer(function(input, output, session) {
         read.csv("coviddata.csv",fileEncoding = "sJIS")%>%
         mutate(Fixed_Date=as.Date(Fixed_Date))%>%
         filter(!is.na(X))
-    data7%>%
-        distinct(Residential_City)
-    City<-
-        data.frame(Residential_City=c("相模原市","横浜市","藤沢市","横須賀市","茅ヶ崎市","三浦市","綾瀬市",
-          "大和市","厚木市","鎌倉市","平塚市","小田原市","湯河原町","真鶴町",
-          "愛川町","座間市","伊勢原市","開成町","海老名市","寒川町","南足柄市",
-          "大井町","秦野市","箱根町","葉山町","逗子市","山北町","大磯町",
-          "二宮町","中井町","清川村","松田町","川崎市麻生区","川崎市宮前区",
-          "川崎市川崎区","川崎市高津区","川崎市幸区","川崎市中原区",
-          "川崎市多摩区"))
     date<-
         data7%>%
         data.frame()%>%
@@ -27,9 +17,22 @@ shinyServer(function(input, output, session) {
         renderUI({
             dateInput("x",
                       label = h5("日付を入力してください"),
+                      min = "2020-04-21",
                       max = date[1,1],
                       value = date[1,1])
         })
+    output$update<-
+        renderUI({
+            h5(paste0("2020-04-21記者発表資料から",date[1,1],"記者発表資料掲載分まで集計しています。"))
+        })
+    City<-
+        data.frame(Residential_City=c("相模原市","横浜市","藤沢市","横須賀市","茅ヶ崎市","三浦市","綾瀬市",
+          "大和市","厚木市","鎌倉市","平塚市","小田原市","湯河原町","真鶴町",
+          "愛川町","座間市","伊勢原市","開成町","海老名市","寒川町","南足柄市",
+          "大井町","秦野市","箱根町","葉山町","逗子市","山北町","大磯町",
+          "二宮町","中井町","清川村","松田町","川崎市麻生区","川崎市宮前区",
+          "川崎市川崎区","川崎市高津区","川崎市幸区","川崎市中原区",
+          "川崎市多摩区"))
     jinko<-read.csv("jinko.csv",fileEncoding = "UTF-8")
     jinko<-data.frame(jinko)
     # layers <- ogrListLayers("N03-190101_14_GML/N03-19_14_190101_2.shp")
@@ -122,13 +125,21 @@ shinyServer(function(input, output, session) {
         })
     shp2 <-read_sf("N03-190101_14_GML/N03-19_14_190101.shp",options = "ENCODING=CP932") 
 
+    tetudo<-
+        read_sf("C:/R/data/covid/covid/N02-19_GML/N02-19_Station.shp",options = "ENCODING=CP932")
     
     output$covid_map <- renderLeaflet({
-                     date1<-lubridate::ymd(input$x)-as.numeric(input$y)+1
+        x<-input$x
+        y<-input$y
+        if(is.null(x)){
+            x<-date[1,1]
+        }
+        
+                     date1<-lubridate::ymd(x)-as.numeric(y)+1
                     data7.1<-
                         data7%>%
                         dplyr::filter(Fixed_Date>=date1,
-                                      Fixed_Date<=lubridate::ymd(input$x))%>%
+                                      Fixed_Date<=lubridate::ymd(x))%>%
                         # dplyr::filter(Fixed_Date>="2021-04-24",
                         #               Fixed_Date<="2021-04-24")%>%
                         dplyr::group_by(Residential_City,X,Y)%>%
@@ -152,13 +163,13 @@ shinyServer(function(input, output, session) {
                         sp::merge(shp, data7.1,
                                   by="N03_004", all=F,duplicateGeoms = TRUE)
 
-                    pal <- colorNumeric(palette=c("white","red"),domain=c(0,as.numeric(input$y)*50), reverse=F)
+                    pal <- colorNumeric(palette=c("white","red"),domain=c(0,as.numeric(y)*50), reverse=F)
                     
                     
                     pal2<-
                         data7.2%>%
                         dplyr::mutate(col=pal(count),
-                               col2=ifelse(count>300*as.numeric(input$y),"red",col),
+                               col2=ifelse(count>300*as.numeric(y),"red",col),
                                col2=ifelse(N03_004=="横浜市","gray",col2))
                     leaflet(data7.2) %>%
                         fitBounds(lng1=139.224343, lat1=35.217843, lng2=139.552899, lat2=35.565052)%>%
@@ -169,7 +180,8 @@ shinyServer(function(input, output, session) {
                                     weight=1,
                                     color = "#666",
                                     fillColor = ~pal2$col2,
-                                    label = paste0(data7.2$N03_004,data7.2$count,"人")
+                                    label = paste0(data7.2$N03_004,data7.2$count,"人"),
+                                    labelOptions = labelOptions(textsize = "15px")
                                     )%>%
                         addLegend(data=pal2%>%
                                       #distinct(flag,.keep_all = T)%>%
@@ -177,22 +189,29 @@ shinyServer(function(input, output, session) {
                                       filter(N03_004!="横浜市")%>%
                                       arrange(count),
                             pal=pal,
-                            values = c(0,as.numeric(input$y)*50),
+                            values = c(0,as.numeric(y)*50),
                                   position="bottomright",#color=~col2,labels=~count,
                                   opacity = 1,
                                   #labFormat = labelFormat(transform = function(x)x*x)
                         )%>%
-                        addControl(tags$div(HTML(paste(date1,lubridate::ymd(input$x),sep = "~")))  , position = "topright")%>%
+                        addControl(tags$div(HTML(paste(date1,lubridate::ymd(x),sep = "~")))  , position = "topright")%>%
                         addMarkers(139.274823,35.365831, label = "東海大学湘南キャンパス")%>%
-                        addMarkers(139.313644,35.407144, label = "東海大学伊勢原キャンパス")
+                        addMarkers(139.313644,35.407144, label = "東海大学伊勢原キャンパス")%>%
+                        addPolylines(data=tetudo,
+                                     label = paste(tetudo$N02_004,tetudo$N02_003,tetudo$N02_005),
+                                     labelOptions = labelOptions(textsize = "15px"))
                 
     }
     )
     output$yoko_map<-renderLeaflet({
+        x<-input$x
+        if(is.null(x)){
+            x<-date[1,1]
+        }
         data1<-data%>%
-            dplyr::filter(end<=lubridate::ymd(input$x),
-                          start<=lubridate::ymd(input$x)-6,
-                          lubridate::ymd(input$x)-6<=end)
+            dplyr::filter(end<=lubridate::ymd(x),
+                          start<=lubridate::ymd(x)-6,
+                          lubridate::ymd(x)-6<=end)
        
         yoko_shp<-
             sp::merge(shp2, data1,
@@ -209,19 +228,28 @@ shinyServer(function(input, output, session) {
                         weight=1,
                         color = "#666",
                         fillColor = ~pal(yoko_shp$count),
-                        label = paste0(yoko_shp$N03_004,yoko_shp$count)
+                        label = paste0(yoko_shp$N03_004,yoko_shp$count),
+                        labelOptions = labelOptions(textsize = "15px")
             )%>%
             addLegend(pal=pal,
                       values = c(0,350),
                       position="bottomright",
                       opacity = 1)%>%
-            addControl(tags$div(HTML(unique(yoko_shp$date)))  , position = "topright")
+            addControl(tags$div(HTML(unique(yoko_shp$date)))  , position = "topright")%>%
+            addPolylines(data=tetudo,
+                         label = paste(tetudo$N02_004,tetudo$N02_003,tetudo$N02_005),
+                         labelOptions = labelOptions(textsize = "15px"))
     })
     output$covid_map2 <- renderLeaflet({
-        date1<-lubridate::ymd(input$x)-as.numeric(input$y)+1
+        x<-input$x
+        y<-input$y
+        if(is.null(x)){
+            x<-date[1,1]
+        }
+        date1<-lubridate::ymd(x)-as.numeric(y)+1
         #集計
         data7.1<-data7%>%
-            filter(Fixed_Date>=date1,Fixed_Date<=lubridate::ymd(input$x))%>%
+            filter(Fixed_Date>=date1,Fixed_Date<=lubridate::ymd(x))%>%
             group_by(Residential_City,X,Y)%>%
             summarise(count=n())%>%
             full_join(City)%>%
@@ -246,11 +274,11 @@ shinyServer(function(input, output, session) {
             sp::merge(shp, jinko3,
                       by="N03_004", all=F,duplicateGeoms = TRUE)
         # #色設定
-        pal <- colorNumeric(palette=c("white","red"),domain=c(0,as.numeric(input$y)*20), reverse=F)
+        pal <- colorNumeric(palette=c("white","red"),domain=c(0,as.numeric(y)*20), reverse=F)
         pal2<-
             data7.2%>%
             mutate(col=pal(count_j),
-                   col2=ifelse(count_j>as.numeric(input$y)*20,"red",col))
+                   col2=ifelse(count_j>as.numeric(y)*20,"red",col))
 
         leaflet(data7.2) %>%
             fitBounds(lng1=139.224343, lat1=35.217843, lng2=139.552899, lat2=35.565052)%>%
@@ -260,26 +288,34 @@ shinyServer(function(input, output, session) {
                         color = "#666",
                         #labelOptions = labelOptions(noHide = T, textOnly = TRUE),
                         fillColor = ~pal2$col2,
-                        label = paste0(data7.2$N03_004,round(data7.2$count_j,2))
+                        label = paste0(data7.2$N03_004,round(data7.2$count_j,2)),
+                        labelOptions = labelOptions(textsize = "15px")
             )%>%
             addLegend(data=pal2%>%
                           distinct(col2,.keep_all = T)%>%
                           arrange(count_j),
                       position="bottomright",
                       pal=pal,
-                      values = c(0,as.numeric(input$y)*20),
+                      values = c(0,as.numeric(y)*20),
                       #color=~col2,labels=~flag,opacity = 1,
                       #labFormat = labelFormat(transform = function(x)x*x)
             )%>%
-            addControl(tags$div(HTML(paste(date1,lubridate::ymd(input$x),sep = "~")))  , position = "topright")%>%
+            addControl(tags$div(HTML(paste(date1,lubridate::ymd(x),sep = "~")))  , position = "topright")%>%
             addMarkers(139.274823,35.365831, label = "東海大学湘南キャンパス")%>%
-            addMarkers(139.313644,35.407144, label = "東海大学伊勢原キャンパス")
+            addMarkers(139.313644,35.407144, label = "東海大学伊勢原キャンパス")%>%
+            addPolylines(data=tetudo,
+                         label = paste(tetudo$N02_004,tetudo$N02_003,tetudo$N02_005),
+                         labelOptions = labelOptions(textsize = "15px"))
     })
     output$yoko_map2<-renderLeaflet({
+        x<-input$x
+        if(is.null(x)){
+            x<-date[1,1]
+        }
         data1<-data%>%
-            dplyr::filter(end<=lubridate::ymd(input$x),
-                          start<=lubridate::ymd(input$x)-6,
-                          lubridate::ymd(input$x)-6<=end)
+            dplyr::filter(end<=lubridate::ymd(x),
+                          start<=lubridate::ymd(x)-6,
+                          lubridate::ymd(x)-6<=end)
         data2<-
             left_join(data1,#%>%
                           #filter(year==input$year1,date%in%input$d2),
@@ -298,13 +334,17 @@ shinyServer(function(input, output, session) {
                         weight=1,
                         color = "#666",
                         fillColor = ~pal(yoko_shp2$count_j),
-                        label = paste0(yoko_shp2$N03_004,yoko_shp2$count_j)
+                        label = paste0(yoko_shp2$N03_004,yoko_shp2$count_j),
+                        labelOptions = labelOptions(textsize = "15px")
             )%>%
             addLegend(pal=pal,
                       values = c(0,140),
                       position="bottomright",
                       opacity = 1)%>%
-            addControl(tags$div(HTML(unique(yoko_shp2$date))), position = "topright")
+            addControl(tags$div(HTML(unique(yoko_shp2$date))), position = "topright")%>%
+            addPolylines(data=tetudo,
+                         label = paste(tetudo$N02_004,tetudo$N02_003,tetudo$N02_005),
+                         labelOptions = labelOptions(textsize = "15px"))
         
     })
     # output$text<-

@@ -25,7 +25,8 @@ shinyUI(fluidPage(
           ")),
             conditionalPanel(condition="$('html').hasClass('shiny-busy')",
                              tags$div("Loading...",id="loadmessage")),
-            h5("最終アップデート:2021-05-04"),
+            #h5("最終アップデート:2021-05-04"),
+            uiOutput("update"),
             h3("Input"),
             h4("設定"),
             h4("神奈川県全体の状況"),
@@ -42,20 +43,7 @@ shinyUI(fluidPage(
             # selectInput("year1","年を選択してください。",
             #             c("2021年"="2021年","2020年"="2020年")),
             # uiOutput("date2"),
-            p("＊1 横浜市が前週の新規感染者数の訂正をしたため、鶴見区と泉区の4月18日から4月27日の新規感染者数がマイナスになっています。
 
-            ＊2 横浜市が7月18日から7月24日のデータと7月25日から7月31日のデータをまとめて公表したため、その2週間のデータを半分にしたものを1週間のデータとしています。
-
-            ＊3 9月5日から9月11日の区ごとの新規感染者数には、8月29日から9月4日に調査中だった39人が含まれます。
-            （横浜市全体の新規感染者数には含まれません。）
-
-            ＊4 横浜市が12月4日に12月10日までのデータを公表したため、11月28日から12月10日は他の週よりも1日短くなっています。
-
-            ＊5 横浜市が12月26日から12月31日のデータと1月1日から1月7日のデータをまとめて公表したため、その2週間のデータを半分にしたものを1週間のデータとしています。
-
-            市外とは、横浜市外に住み、横浜市内で検査して陽性となった人の合計です。
-
-            ")
             # sliderInput("color",
             #             label = "Setting of color",
             #             min = 10,
@@ -69,16 +57,20 @@ shinyUI(fluidPage(
         # Show a plot of the generated distribution
         mainPanel(tabsetPanel(type = "tabs",
                               tabPanel("累積感染者数",
+                                       tags$style(type = "text/css", "#covid_map {height: calc(60vh - 40px) !important;}",
+                                                  "#yoko_map {height: calc(25vh - 15px) !important;}"),
                                        h4("神奈川県全体の状況"),
-                                       leafletOutput("covid_map",height = "800px"),
+                                       leafletOutput("covid_map"),
                                        h4("横浜市の状況"),
-                                       leafletOutput("yoko_map",height = "300px"),
-),
+                                       leafletOutput("yoko_map")),
+                              
                               tabPanel("10万人当たりの累積感染者数",
+                                       tags$style(type = "text/css", "#covid_map2 {height: calc(65vh - 40px) !important;}",
+                                                  "#yoko_map2 {height: calc(25vh - 15px) !important;}"),
                                        h4("神奈川県全体の状況"),
-                                       leafletOutput("covid_map2",height = "800px"),
+                                       leafletOutput("covid_map2"),
                                        h4("横浜市の状況"),
-                                       leafletOutput("yoko_map2",height = "300px"),
+                                       leafletOutput("yoko_map2"),
                                        ),
                               tabPanel("謝辞および参考文献",
                                        h4("謝辞"),
@@ -93,13 +85,31 @@ shinyUI(fluidPage(
                                        p(""),
                                        p("横浜市の区別データは以下のサイトのデータを参照しています。"),
                                        tags$a(href="https://square.umin.ac.jp/kenkono/","横浜市区別コロナデータ"),
+                                       p("＊1 横浜市が前週の新規感染者数の訂正をしたため、鶴見区と泉区の4月18日から4月27日の新規感染者数がマイナスになっています。
+
+            ＊2 横浜市が7月18日から7月24日のデータと7月25日から7月31日のデータをまとめて公表したため、その2週間のデータを半分にしたものを1週間のデータとしています。
+
+            ＊3 9月5日から9月11日の区ごとの新規感染者数には、8月29日から9月4日に調査中だった39人が含まれます。
+            （横浜市全体の新規感染者数には含まれません。）
+
+            ＊4 横浜市が12月4日に12月10日までのデータを公表したため、11月28日から12月10日は他の週よりも1日短くなっています。
+
+            ＊5 横浜市が12月26日から12月31日のデータと1月1日から1月7日のデータをまとめて公表したため、その2週間のデータを半分にしたものを1週間のデータとしています。
+
+            市外とは、横浜市外に住み、横浜市内で検査して陽性となった人の合計です。
+
+            "),
+                                       
                                        p(""),
+                                       h4("PC推奨環境"),
+                                       h5("OS"),
+                                       p("Windows10"),
+                                       h5("PC推奨ブラウザ"),
+                                       p("Microsoft Edge,Google Chrome"),
+                                       p("当サイトでは、レイアウトの倍率を100％での利用を推奨しています。"),
                                        p("本サイトでは、横浜市、横須賀市、相模原市、藤沢市は発表日を他の市町村は陽性判明日を元に感染者の集計を行っています。"),
-                                       p("東海大学大学院理学研究科　棚橋真弓")
-                              # textOutput("text"),
-                              # textOutput("text2")
-                              )
-                              )
+                                       p("東海大学大学院理学研究科　棚橋真弓")),
+                                tabPanel("ヘルプ",))
                   )
     )
     
