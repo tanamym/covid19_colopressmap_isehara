@@ -6,11 +6,14 @@ if (!require(leaflet)) {
     install.packages("leaflet")
 }
 library(leaflet)
+if(!require(shinyWidgets)){
+    install.packages("shinyWidgets")
+}
+library(shinyWidgets)
 shinyUI(fluidPage(
     # Application title
     titlePanel("COVID-MAP"),
-    
-    # Sidebar with a slider input for number of bins 
+
     sidebarLayout(
         sidebarPanel(
             tags$head(tags$style(type="text/css", "
@@ -26,6 +29,7 @@ shinyUI(fluidPage(
                color: #ffffff;
                background-color: #3399ff;
                z-index: 105;
+               
              }
           ")),
             conditionalPanel(condition="$('html').hasClass('shiny-busy')",
@@ -45,15 +49,10 @@ shinyUI(fluidPage(
                          ),
             h4("横浜市の状況"),
             p("注意：以下の横浜市は一週間ごとの集計です。"),
-            # selectInput("year1","年を選択してください。",
-            #             c("2021年"="2021年","2020年"="2020年")),
-            # uiOutput("date2"),
-
-            # sliderInput("color",
-            #             label = "Setting of color",
-            #             min = 10,
-            #             max = 2000,
-            #             value = 1600,)
+            switchInput("onoff",
+                        label="駅の表示"),
+            width=3
+            
                      
         ),
         
@@ -62,21 +61,30 @@ shinyUI(fluidPage(
         # Show a plot of the generated distribution
         mainPanel(tabsetPanel(type = "tabs",
                               tabPanel("累積感染者数",
-                                       tags$style(type = "text/css", "#covid_map {height: calc(60vh - 40px) !important;}",
-                                                  "#yoko_map {height: calc(25vh - 15px) !important;}"),
-                                       h4("神奈川県全体の状況"),
-                                       leafletOutput("covid_map"),
-                                       h4("横浜市の状況"),
-                                       leafletOutput("yoko_map")),
+                                       fluidRow(
+                                       tags$style(type = "text/css", "#covid_map {height: calc(70vh - 15px) !important;}",
+                                                  "#yoko_map {height: calc(70vh - 15px) !important;}"),
+                                       column(8,
+                                              h4("神奈川県全体の状況"),
+                                              leafletOutput("covid_map")),
+                                       column(4,
+                                              h4("横浜市の状況"),
+                                              leafletOutput("yoko_map")
+                                              )
+                                       )),
                               
                               tabPanel("10万人当たりの累積感染者数",
-                                       tags$style(type = "text/css", "#covid_map2 {height: calc(65vh - 40px) !important;}",
-                                                  "#yoko_map2 {height: calc(25vh - 15px) !important;}"),
-                                       h4("神奈川県全体の状況"),
-                                       leafletOutput("covid_map2"),
-                                       h4("横浜市の状況"),
-                                       leafletOutput("yoko_map2"),
-                                       ),
+                                       fluidRow(
+                                       tags$style(type = "text/css", "#covid_map2 {height: calc(70vh - 15px) !important;}",
+                                                  "#yoko_map2 {height: calc(70vh - 15px) !important;}"),
+                                       column(8,
+                                              h4("神奈川県全体の状況"),
+                                              leafletOutput("covid_map2")),
+                                       column(4,
+                                              h4("横浜市の状況"),
+                                              leafletOutput("yoko_map2"),
+                                              )
+                                       )),
                               tabPanel("謝辞および参考文献",
                                        h4("謝辞"),
                                        h5("この研究は、2021年度東海大学連合後援会助成金交付により研究が遂行されたものです。また日々、新型コロナウイルス感染症の対応を行っている医療関係者や保健所の皆様、データの提供元のおかげで本研究を進めることができました。また、東海大学分子生命科学の今西規先生と指導教員である東海大学理学部数学科の山本義郎先生には有益な助言をいただきました。この場を借りて深く御礼申し上げます。"),
@@ -106,17 +114,20 @@ shinyUI(fluidPage(
             "),
                                        
                                        p(""),
-                                       h4("PC推奨環境"),
+                                       p("本サイトでは、横浜市、横須賀市、相模原市、藤沢市は発表日を他の市町村は陽性判明日を元に感染者の集計を行っています。"),
+                                       p("東海大学大学院理学研究科　棚橋真弓")),
+                                tabPanel("ヘルプ",
+                                         h4("PC推奨環境"),
                                        h5("OS"),
                                        p("Windows10"),
                                        h5("PC推奨ブラウザ"),
                                        p("Microsoft Edge,Google Chrome"),
                                        p("当サイトでは、レイアウトの倍率を100％での利用を推奨しています。"),
-                                       p("本サイトでは、横浜市、横須賀市、相模原市、藤沢市は発表日を他の市町村は陽性判明日を元に感染者の集計を行っています。"),
-                                       p("東海大学大学院理学研究科　棚橋真弓")),
-                                tabPanel("ヘルプ",))
+                                       )
+                              ),
+                  width=9
                   )
-    )
+        )
     
     
 )

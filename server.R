@@ -28,7 +28,7 @@ if(!require(sp)){
 library(sp)
 shinyServer(function(input, output, session) {
     data7<-
-        read.csv("coviddata.csv",fileEncoding = "sJIS")%>%
+        read.csv("https://raw.githubusercontent.com/tanamym/covid19_colopressmap_isehara/main/coviddata.csv",fileEncoding = "sJIS")%>%
         mutate(Fixed_Date=as.Date(Fixed_Date))%>%
         filter(!is.na(X))
     date<-
@@ -58,36 +58,13 @@ shinyServer(function(input, output, session) {
           "川崎市多摩区"))
     jinko<-read.csv("jinko.csv",fileEncoding = "UTF-8")
     jinko<-data.frame(jinko)
-    # layers <- ogrListLayers("N03-190101_14_GML/N03-19_14_190101_2.shp")
-    # Encoding(layers[1]) <- "UTF-8"
-    # shp <- readOGR("N03-190101_14_GML/N03-19_14_190101_2.shp", layer=layers[1],
-    #                stringsAsFactors = FALSE,
-    #                encoding = "UTF-8"
-    #                )
+
 
     shp<-
         read_sf("N03-190101_14_GML/N03-19_14_190101_2.shp",options = "ENCODING=sJIS")
     head(shp%>%
              filter(N03_003 %in% c("川崎市")))
-    # shp1<-
-    #     shp %>% filter(N03_003 %in% c("横浜市")) %>%
-    #     aggregate(by = list(.$N03_003), FUN = "head", n=1) %>%
-    #     select(-1) %>% 
-    #     mutate(N03_004 = N03_003,
-    #            N03_007 = "14100")
-    # head(shp1)
-    # shp2<-
-    #     shp %>% filter(N03_003 %in% c("相模原市")) %>%
-    #     aggregate(by = list(.$N03_003), FUN = "head", n=1) %>%
-    #     select(-1) %>% 
-    #     mutate(N03_004 = N03_003,
-    #            N03_007 = "14150")
-    # shp3<-
-    #     shp%>%
-    #     filter(!N03_003 %in% c("横浜市","相模原市"))
-    # shp.new<-
-    #     rbind(shp1,shp2,shp3)%>% 
-    #     arrange(N03_007)
+
     head(shp)
     yoko<-
         read.csv("https://square.umin.ac.jp/kenkono/csv/ward-new.csv",
@@ -149,7 +126,7 @@ shinyServer(function(input, output, session) {
     shp2 <-read_sf("N03-190101_14_GML/N03-19_14_190101.shp",options = "ENCODING=CP932") 
 
     tetudo<-
-        read_sf("N02-19_GML/N02-19_Station.shp",options = "ENCODING=CP932")
+        read_sf("N02-19_GML/N02-19_Station2.shp",options = "ENCODING=CP932")
     
     output$covid_map <- renderLeaflet({
         x<-input$x
@@ -194,8 +171,40 @@ shinyServer(function(input, output, session) {
                         dplyr::mutate(col=pal(count),
                                col2=ifelse(count>300*as.numeric(y),"red",col),
                                col2=ifelse(N03_004=="横浜市","gray",col2))
-                    leaflet(data7.2) %>%
-                        fitBounds(lng1=139.224343, lat1=35.217843, lng2=139.552899, lat2=35.565052)%>%
+                    if(input$onoff){
+                        leaflet(data7.2) %>%
+                            fitBounds(lng1=139.752206, lat1=35.153839, lng2=138.9488, lat2=35.645042)%>%
+                            #setView(lng=139.424343, lat=35.417843,zoom=10)%>%
+                            addProviderTiles(providers$CartoDB.Positron)%>%
+                            addPolygons(
+                                fillOpacity = 1,
+                                weight=1,
+                                color = "#666",
+                                fillColor = ~pal2$col2,
+                                label = paste0(data7.2$N03_004,data7.2$count,"人"),
+                                labelOptions = labelOptions(textsize = "15px")
+                            )%>%
+                            addLegend(data=pal2%>%
+                                          #distinct(flag,.keep_all = T)%>%
+                                          distinct(col2,.keep_all = T)%>%
+                                          filter(N03_004!="横浜市")%>%
+                                          arrange(count),
+                                      pal=pal,
+                                      values = c(0,as.numeric(y)*50),
+                                      position="bottomright",#color=~col2,labels=~count,
+                                      opacity = 1,
+                                      #labFormat = labelFormat(transform = function(x)x*x)
+                            )%>%
+                            addControl(tags$div(HTML(paste(date1,lubridate::ymd(x),sep = "~")))  , position = "topright")%>%
+                            addMarkers(139.274823,35.365831, label = "東海大学湘南キャンパス")%>%
+                            addMarkers(139.313644,35.407144, label = "東海大学伊勢原キャンパス")%>%
+                            addPolylines(data=tetudo,
+                                         label = paste(tetudo$N02_004,tetudo$N02_003,tetudo$N02_005),
+                                         labelOptions = labelOptions(textsize = "15px"))
+                    }else{
+                        leaflet(data7.2) %>%
+                        fitBounds(lng1=139.752206, lat1=35.153839, lng2=138.9488, lat2=35.645042)%>%
+
                         #setView(lng=139.424343, lat=35.417843,zoom=10)%>%
                         addProviderTiles(providers$CartoDB.Positron)%>%
                         addPolygons(
@@ -219,10 +228,9 @@ shinyServer(function(input, output, session) {
                         )%>%
                         addControl(tags$div(HTML(paste(date1,lubridate::ymd(x),sep = "~")))  , position = "topright")%>%
                         addMarkers(139.274823,35.365831, label = "東海大学湘南キャンパス")%>%
-                        addMarkers(139.313644,35.407144, label = "東海大学伊勢原キャンパス")%>%
-                        addPolylines(data=tetudo,
-                                     label = paste(tetudo$N02_004,tetudo$N02_003,tetudo$N02_005),
-                                     labelOptions = labelOptions(textsize = "15px"))
+                        addMarkers(139.313644,35.407144, label = "東海大学伊勢原キャンパス")
+                    }
+                    
                 
     }
     )
@@ -242,10 +250,12 @@ shinyServer(function(input, output, session) {
                       by=c("N03_004","N03_003"), all=F,duplicateGeoms = TRUE)
 
         pal <- colorNumeric(palette=c("white","red"),domain=c(0,350), reverse=F)
-        yoko_shp%>%
+        if(input$onoff){
+            yoko_shp%>%
             leaflet() %>%
+            fitBounds(lng1=139.692206, lat1=35.328117, lng2=139.474443, lat2=35.573221)%>%
             #fitBounds(lng1=139.124343, lat1=35.117843, lng2=139.652899, lat2=35.665052)%>% 
-            setView(lng=139.604343, lat=35.4547843,zoom=10)%>%
+            #setView(lng=139.604343, lat=35.4547843,zoom=10)%>%
             addProviderTiles(providers$CartoDB.Positron) %>% 
             addPolygons(fillOpacity = 1,
                         weight=1,
@@ -262,6 +272,27 @@ shinyServer(function(input, output, session) {
             addPolylines(data=tetudo,
                          label = paste(tetudo$N02_004,tetudo$N02_003,tetudo$N02_005),
                          labelOptions = labelOptions(textsize = "15px"))
+        }else{
+            yoko_shp%>%
+                leaflet() %>%
+                fitBounds(lng1=139.692206, lat1=35.328117, lng2=139.474443, lat2=35.553221)%>%
+                #fitBounds(lng1=139.124343, lat1=35.117843, lng2=139.652899, lat2=35.665052)%>% 
+                #setView(lng=139.604343, lat=35.4547843,zoom=10)%>%
+                addProviderTiles(providers$CartoDB.Positron) %>% 
+                addPolygons(fillOpacity = 1,
+                            weight=1,
+                            color = "#666",
+                            fillColor = ~pal(yoko_shp$count),
+                            label = paste0(yoko_shp$N03_004,yoko_shp$count),
+                            labelOptions = labelOptions(textsize = "15px")
+                            )%>%
+                addLegend(pal=pal,
+                          values = c(0,350),
+                          position="bottomright",
+                          opacity = 1)%>%
+                addControl(tags$div(HTML(unique(yoko_shp$date)))  , position = "topright")
+        }
+        
     })
     output$covid_map2 <- renderLeaflet({
         x<-input$x
@@ -297,14 +328,15 @@ shinyServer(function(input, output, session) {
             sp::merge(shp, jinko3,
                       by="N03_004", all=F,duplicateGeoms = TRUE)
         # #色設定
-        pal <- colorNumeric(palette=c("white","red"),domain=c(0,as.numeric(y)*20), reverse=F)
+        pal <- colorNumeric(palette=c("white","red"),domain=c(0,as.numeric(y)*8), reverse=F)
         pal2<-
             data7.2%>%
             mutate(col=pal(count_j),
-                   col2=ifelse(count_j>as.numeric(y)*20,"red",col))
-
-        leaflet(data7.2) %>%
-            fitBounds(lng1=139.224343, lat1=35.217843, lng2=139.552899, lat2=35.565052)%>%
+                   col2=ifelse(count_j>as.numeric(y)*8,"red",col))
+        if(input$onoff){
+            leaflet(data7.2) %>%
+            fitBounds(lng1=139.752206, lat1=35.153839, lng2=138.9488, lat2=35.645042)%>%
+            #fitBounds(lng1=139.224343, lat1=35.217843, lng2=139.552899, lat2=35.565052)%>%
             addProviderTiles(providers$CartoDB.Positron) %>%
             addPolygons(fillOpacity = 1,
                         weight=1,
@@ -319,8 +351,9 @@ shinyServer(function(input, output, session) {
                           arrange(count_j),
                       position="bottomright",
                       pal=pal,
-                      values = c(0,as.numeric(y)*20),
-                      #color=~col2,labels=~flag,opacity = 1,
+                      values = c(0,as.numeric(y)*8),
+                      #color=~col2,labels=~flag,
+                      opacity = 1,
                       #labFormat = labelFormat(transform = function(x)x*x)
             )%>%
             addControl(tags$div(HTML(paste(date1,lubridate::ymd(x),sep = "~")))  , position = "topright")%>%
@@ -329,6 +362,35 @@ shinyServer(function(input, output, session) {
             addPolylines(data=tetudo,
                          label = paste(tetudo$N02_004,tetudo$N02_003,tetudo$N02_005),
                          labelOptions = labelOptions(textsize = "15px"))
+        }else{
+            leaflet(data7.2) %>%
+                fitBounds(lng1=139.752206, lat1=35.153839, lng2=138.9488, lat2=35.645042)%>%
+                #fitBounds(lng1=139.224343, lat1=35.217843, lng2=139.552899, lat2=35.565052)%>%
+                addProviderTiles(providers$CartoDB.Positron) %>%
+                addPolygons(fillOpacity = 1,
+                            weight=1,
+                            color = "#666",
+                            #labelOptions = labelOptions(noHide = T, textOnly = TRUE),
+                            fillColor = ~pal2$col2,
+                            label = paste0(data7.2$N03_004,round(data7.2$count_j,2)),
+                            labelOptions = labelOptions(textsize = "15px")
+                )%>%
+                addLegend(data=pal2%>%
+                              distinct(col2,.keep_all = T)%>%
+                              arrange(count_j),
+                          position="bottomright",
+                          pal=pal,
+                          values = c(0,as.numeric(y)*8),
+                          #color=~col2,labels=~flag,
+                          opacity = 1,
+                          #labFormat = labelFormat(transform = function(x)x*x)
+                )%>%
+                addControl(tags$div(HTML(paste(date1,lubridate::ymd(x),sep = "~")))  , position = "topright")%>%
+                addMarkers(139.274823,35.365831, label = "東海大学湘南キャンパス")%>%
+                addMarkers(139.313644,35.407144, label = "東海大学伊勢原キャンパス")
+        }
+
+        
     })
     output$yoko_map2<-renderLeaflet({
         x<-input$x
@@ -347,11 +409,13 @@ shinyServer(function(input, output, session) {
         yoko_shp2<-
             sp::merge(shp2, data2,
                       by=c("N03_004","N03_003"), all=F,duplicateGeoms = TRUE)
-        pal <- colorNumeric(palette=c("white","red"),domain=c(0,140), reverse=F)
-        yoko_shp2%>%
+        pal <- colorNumeric(palette=c("white","red"),domain=c(0,56), reverse=F)
+        if(input$onoff){
+            yoko_shp2%>%
             leaflet() %>%
+            fitBounds(lng1=139.692206, lat1=35.328117, lng2=139.474443, lat2=35.573221)%>%
             #fitBounds(lng1=139.124343, lat1=35.117843, lng2=139.652899, lat2=35.665052)%>% 
-            setView(lng=139.604343, lat=35.457843,zoom=10)%>%
+            #setView(lng=139.604343, lat=35.457843,zoom=10)%>%
             addProviderTiles(providers$CartoDB.Positron) %>% 
             addPolygons(fillOpacity = 1,
                         weight=1,
@@ -361,18 +425,36 @@ shinyServer(function(input, output, session) {
                         labelOptions = labelOptions(textsize = "15px")
             )%>%
             addLegend(pal=pal,
-                      values = c(0,140),
+                      values = c(0,56),
                       position="bottomright",
                       opacity = 1)%>%
             addControl(tags$div(HTML(unique(yoko_shp2$date))), position = "topright")%>%
             addPolylines(data=tetudo,
                          label = paste(tetudo$N02_004,tetudo$N02_003,tetudo$N02_005),
                          labelOptions = labelOptions(textsize = "15px"))
+        }else{
+            yoko_shp2%>%
+                leaflet() %>%
+                fitBounds(lng1=139.692206, lat1=35.328117, lng2=139.474443, lat2=35.573221)%>%
+                #fitBounds(lng1=139.124343, lat1=35.117843, lng2=139.652899, lat2=35.665052)%>% 
+                #setView(lng=139.604343, lat=35.457843,zoom=10)%>%
+                addProviderTiles(providers$CartoDB.Positron) %>% 
+                addPolygons(fillOpacity = 1,
+                            weight=1,
+                            color = "#666",
+                            fillColor = ~pal(yoko_shp2$count_j),
+                            label = paste0(yoko_shp2$N03_004,yoko_shp2$count_j),
+                            labelOptions = labelOptions(textsize = "15px")
+                )%>%
+                addLegend(pal=pal,
+                          values = c(0,56),
+                          position="bottomright",
+                          opacity = 1)%>%
+                addControl(tags$div(HTML(unique(yoko_shp2$date))), position = "topright")
+        }
+        
         
     })
-    # output$text<-
-    #     renderText({
-    #         "この研究は、2021年度の助成金交付により研究が遂行されたものです。"
-    #     })
+
 
     })
