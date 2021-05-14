@@ -39,7 +39,7 @@ shinyServer(function(input, output, session) {
     output$date<-
         renderUI({
             dateInput("x",
-                      label = h5("日付を入力してください"),
+                      label = "日付を入力してください",
                       min = "2020-04-21",
                       max = date[1,1],
                       value = date[1,1])
@@ -241,8 +241,11 @@ shinyServer(function(input, output, session) {
         }
         data1<-data%>%
             dplyr::filter(end<=lubridate::ymd(x),
-                          start<=lubridate::ymd(x)-6,
-                          lubridate::ymd(x)-6<=end)
+                          start<=lubridate::ymd(x)-6)%>%
+            group_by(N03_004)%>%
+            mutate(rank=dense_rank(desc(end)))%>%
+            filter(rank==1)%>%
+            ungroup()
        
         yoko_shp<-
             sp::merge(shp2, data1,
