@@ -71,7 +71,7 @@ shinyServer(function(input, output, session) {
 
     head(shp)
     yoko<-
-        read.csv("https://square.umin.ac.jp/kenkono/csv/ward-new.csv",
+        fread("https://square.umin.ac.jp/kenkono/csv/ward-new.csv",
                  encoding = "UTF-8",
                  header = F)
 
@@ -131,7 +131,8 @@ shinyServer(function(input, output, session) {
 
     tetudo<-
         read_sf("N02-19_GML/N02-19_Station2.shp",options = "ENCODING=CP932")
-
+    rosen<-
+      read_sf("N02-19_GML/N02-19_RailroadSection2.shp",options = "ENCODING=CP932")
     output$covid_map <- renderLeaflet({
         x<-input$x
         y<-input$y
@@ -207,7 +208,11 @@ shinyServer(function(input, output, session) {
                                          color = ~pal3(N02_003),
                                          label = paste(tetudo$N02_004,tetudo$N02_003),
                                          labelOptions = labelOptions(textsize = "15px"),
-                                         group = tetudo$N02_003)%>%
+                                         group = tetudo$N02_004)%>%
+                            addPolylines(data=rosen,
+                                         label = paste(rosen$N02_004,rosen$N02_003),
+                                         labelOptions = labelOptions(textsize = "15px"),
+                                         group = tetudo$N02_004)%>%
                             addLayersControl(overlayGroups =tetudo$N02_003,
                                              position = "bottomleft")
                     }else{
