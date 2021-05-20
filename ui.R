@@ -45,6 +45,8 @@ shinyUI(fluidPage(
                          ),
             switchInput("onoff",
                         label="駅の表示"),
+            actionButton("action",
+                         label="更新"),
             width=3
             
                      

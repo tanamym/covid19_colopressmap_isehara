@@ -133,7 +133,8 @@ shinyServer(function(input, output, session) {
         read_sf("N02-19_GML/N02-19_Station2.shp",options = "ENCODING=CP932")
     rosen<-
       read_sf("N02-19_GML/N02-19_RailroadSection2.shp",options = "ENCODING=CP932")
-    output$covid_map <- renderLeaflet({
+    do1<-
+      eventReactive(input$action,{
         x<-input$x
         y<-input$y
         if(is.null(x)){
@@ -245,11 +246,15 @@ shinyServer(function(input, output, session) {
                         addMarkers(139.274823,35.365831, label = "東海大学湘南キャンパス")%>%
                         addMarkers(139.313644,35.407144, label = "東海大学伊勢原キャンパス")
                     }
+      })
+    output$covid_map <- renderLeaflet({
+        do1()
 
 
     }
     )
-    output$yoko_map<-renderLeaflet({
+    do2<-
+      eventReactive(input$action,{
         x<-input$x
         if(is.null(x)){
             x<-date[1,1]
@@ -268,7 +273,7 @@ shinyServer(function(input, output, session) {
                       by=c("N03_004","N03_003"), all=F,duplicateGeoms = TRUE)
 
         pal <- colorNumeric(palette=c("white","red"),domain=c(0,350), reverse=F)
-        pal3<-colorFactor(topo.colors(81),domain = tetudo$N02_003)
+        pal3<-colorFactor(topo.colors(25),domain = tetudo$N02_004)
         if(input$onoff){
             yoko_shp%>%
             leaflet() %>%
@@ -289,11 +294,16 @@ shinyServer(function(input, output, session) {
                       opacity = 1)%>%
             addControl(tags$div(HTML(unique(yoko_shp$date)))  , position = "topright")%>%
             addPolylines(data=tetudo,
-                         color = ~pal3(N02_003),
+                         color = ~pal3(N02_004),
                          label = paste(tetudo$N02_004,tetudo$N02_003),
                          labelOptions = labelOptions(textsize = "15px"),
                          group = tetudo$N02_003)%>%
-                addLayersControl(overlayGroups =tetudo$N02_003,
+            addPolylines(data=rosen,
+                         color = ~pal3(N02_004),
+                         label = paste(rosen$N02_004,rosen$N02_003),
+                         labelOptions = labelOptions(textsize = "15px"),
+                         group = rosen$N02_004)%>%
+                addLayersControl(overlayGroups =tetudo$N02_004,
                                  position = "bottomleft")
         }else{
             yoko_shp%>%
@@ -315,9 +325,13 @@ shinyServer(function(input, output, session) {
                           opacity = 1)%>%
                 addControl(tags$div(HTML(unique(yoko_shp$date)))  , position = "topright")
         }
+      })
+    output$yoko_map<-renderLeaflet({
+        do2()
 
     })
-    output$covid_map2 <- renderLeaflet({
+    do3<-
+      eventReactive(input$action,{
         x<-input$x
         y<-input$y
         if(is.null(x)){
@@ -356,7 +370,7 @@ shinyServer(function(input, output, session) {
             data7.2%>%
             mutate(col=pal(count_j),
                    col2=ifelse(count_j>as.numeric(y)*8,"red",col))
-        pal3<-colorFactor(topo.colors(81),domain = tetudo$N02_003)
+        pal3<-colorFactor(topo.colors(25),domain = tetudo$N02_004)
         if(input$onoff){
             leaflet(data7.2) %>%
             fitBounds(lng1=139.752206, lat1=35.153839, lng2=138.9488, lat2=35.645042)%>%
@@ -384,11 +398,16 @@ shinyServer(function(input, output, session) {
             addMarkers(139.274823,35.365831, label = "東海大学湘南キャンパス")%>%
             addMarkers(139.313644,35.407144, label = "東海大学伊勢原キャンパス")%>%
             addPolylines(data=tetudo,
-                         color = ~pal3(N02_003),
+                         color = ~pal3(N02_004),
                          label = paste(tetudo$N02_004,tetudo$N02_003),
                          labelOptions = labelOptions(textsize = "15px"),
                          group = tetudo$N02_003)%>%
-                addLayersControl(overlayGroups =tetudo$N02_003,
+            addPolylines(data=rosen,
+                         color = ~pal3(N02_004),
+                         label = paste(rosen$N02_004,rosen$N02_003),
+                         labelOptions = labelOptions(textsize = "15px"),
+                         group = rosen$N02_004)%>%
+                addLayersControl(overlayGroups =tetudo$N02_004,
                                  position = "bottomleft")
         }else{
             leaflet(data7.2) %>%
@@ -417,10 +436,14 @@ shinyServer(function(input, output, session) {
                 addMarkers(139.274823,35.365831, label = "東海大学湘南キャンパス")%>%
                 addMarkers(139.313644,35.407144, label = "東海大学伊勢原キャンパス")
         }
+      })
+    output$covid_map2 <- renderLeaflet({
+        do3()
 
 
     })
-    output$yoko_map2<-renderLeaflet({
+    do4<-
+      eventReactive(input$action,{
         x<-input$x
         if(is.null(x)){
             x<-date[1,1]
@@ -438,7 +461,7 @@ shinyServer(function(input, output, session) {
             sp::merge(shp2, data2,
                       by=c("N03_004","N03_003"), all=F,duplicateGeoms = TRUE)
         pal <- colorNumeric(palette=c("white","red"),domain=c(0,56), reverse=F)
-        pal3<-colorFactor(topo.colors(81),domain = tetudo$N02_003)
+        pal3<-colorFactor(topo.colors(25),domain = tetudo$N02_004)
         if(input$onoff){
             yoko_shp2%>%
             leaflet() %>%
@@ -459,11 +482,16 @@ shinyServer(function(input, output, session) {
                       opacity = 1)%>%
             addControl(tags$div(HTML(unique(yoko_shp2$date))), position = "topright")%>%
             addPolylines(data=tetudo,
-                         color = ~pal3(N02_003),
+                         color = ~pal3(N02_004),
                          label = paste(tetudo$N02_004,tetudo$N02_003),
                          labelOptions = labelOptions(textsize = "15px"),
                          group = tetudo$N02_003)%>%
-                addLayersControl(overlayGroups =tetudo$N02_003,
+            addPolylines(data=rosen,
+                         color = ~pal3(N02_004),
+                         label = paste(rosen$N02_004,rosen$N02_003),
+                         labelOptions = labelOptions(textsize = "15px"),
+                         group = rosen$N02_004)%>%
+                addLayersControl(overlayGroups =tetudo$N02_004,
                                  position = "bottomleft")
         }else{
             yoko_shp2%>%
@@ -487,6 +515,9 @@ shinyServer(function(input, output, session) {
         }
 
 
+      })
+    output$yoko_map2<-renderLeaflet({
+        do4()
     })
 
 
