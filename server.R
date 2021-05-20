@@ -176,7 +176,7 @@ shinyServer(function(input, output, session) {
                         dplyr::mutate(col=pal(count),
                                col2=ifelse(count>300*as.numeric(y),"red",col),
                                col2=ifelse(N03_004=="横浜市","gray",col2))
-                    pal3<-colorFactor(topo.colors(81),domain = tetudo$N02_003)
+                    pal3<-colorFactor(topo.colors(25),domain = tetudo$N02_004)
                     if(input$onoff){
                         leaflet(data7.2) %>%
                             fitBounds(lng1=139.752206, lat1=35.153839, lng2=138.9488, lat2=35.645042)%>%
@@ -205,15 +205,16 @@ shinyServer(function(input, output, session) {
                             addMarkers(139.274823,35.365831, label = "東海大学湘南キャンパス")%>%
                             addMarkers(139.313644,35.407144, label = "東海大学伊勢原キャンパス")%>%
                             addPolylines(data=tetudo,
-                                         color = ~pal3(N02_003),
+                                         color = ~pal3(N02_004),
                                          label = paste(tetudo$N02_004,tetudo$N02_003),
                                          labelOptions = labelOptions(textsize = "15px"),
                                          group = tetudo$N02_004)%>%
                             addPolylines(data=rosen,
+                                         color = ~pal3(N02_004),
                                          label = paste(rosen$N02_004,rosen$N02_003),
                                          labelOptions = labelOptions(textsize = "15px"),
-                                         group = tetudo$N02_004)%>%
-                            addLayersControl(overlayGroups =tetudo$N02_003,
+                                         group = rosen$N02_004)%>%
+                            addLayersControl(overlayGroups =tetudo$N02_004,
                                              position = "bottomleft")
                     }else{
                         leaflet(data7.2) %>%
