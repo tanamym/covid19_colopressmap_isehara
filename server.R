@@ -27,11 +27,15 @@ if(!require(sp)){
 }
 library(sp)
 if(!require(data.table)){
-    install.packages("data.tabl")
+    install.packages("data.table")
 }
 library(data.table)
+
+load("Dataset.RData")
+
 shinyServer(function(input, output, session) {
     data7<-
+        # read.csv("https://raw.githubusercontent.com/tanamym/covid19_colopressmap_isehara/main/coviddata.csv",fileEncoding = "sJIS")%>%
         fread("https://raw.githubusercontent.com/tanamym/covid19_colopressmap_isehara/main/coviddata.csv",encoding = "UTF-8")%>%
         mutate(Fixed_Date=as.Date(Fixed_Date))%>%
         filter(!is.na(X))
@@ -40,41 +44,10 @@ shinyServer(function(input, output, session) {
         data.frame()%>%
         arrange(desc(Fixed_Date))%>%
         distinct(Fixed_Date)
-    output$date<-
-        renderUI({
-            dateInput("x",
-                      label = "日付を入力してください",
-                      min = "2020-04-21",
-                      max = date[1,1],
-                      value = date[1,1])
-        })
-    output$update<-
-        renderUI({
-            h5(paste0("2020-04-21記者発表資料から",date[1,1],"記者発表資料掲載分まで集計しています。"))
-        })
-    City<-
-        data.frame(Residential_City=c("相模原市","横浜市","藤沢市","横須賀市","茅ヶ崎市","三浦市","綾瀬市",
-          "大和市","厚木市","鎌倉市","平塚市","小田原市","湯河原町","真鶴町",
-          "愛川町","座間市","伊勢原市","開成町","海老名市","寒川町","南足柄市",
-          "大井町","秦野市","箱根町","葉山町","逗子市","山北町","大磯町",
-          "二宮町","中井町","清川村","松田町","川崎市麻生区","川崎市宮前区",
-          "川崎市川崎区","川崎市高津区","川崎市幸区","川崎市中原区",
-          "川崎市多摩区"))
-    jinko<-read.csv("jinko.csv",fileEncoding = "UTF-8")
-    jinko<-data.frame(jinko)
-
-
-    shp<-
-        read_sf("N03-190101_14_GML/N03-19_14_190101_2.shp",options = "ENCODING=sJIS")
-    head(shp%>%
-             filter(N03_003 %in% c("川崎市")))
-
-    head(shp)
+    
     yoko<-
-        fread("https://square.umin.ac.jp/kenkono/csv/ward-new.csv",
-                 encoding = "UTF-8",
-                 header = F)
-
+        # read.csv("https://square.umin.ac.jp/kenkono/csv/ward-new.csv", encoding = "UTF-8", header = F)
+        fread("https://square.umin.ac.jp/kenkono/csv/ward-new.csv", encoding = "UTF-8",header = F)
     yoko2<-
         yoko%>%
         filter(V1!="",V1!="区名")%>%
@@ -108,417 +81,409 @@ shinyServer(function(input, output, session) {
                end=str_replace(date,".*~",""))%>%
         mutate(end=str_replace(end," .+",""))%>%
         mutate(year2=str_replace(year,"年",""))%>%
+        # mutate(start=as.Date(paste0(year2,"/",start))) %>%
+        # mutate(end=as.Date(paste0(year2,"/",end))) %>%
         mutate(start=str_replace(start,"/","-"),
                end=str_replace(end,"/","-"),
                start=paste0(year2,"-",start),
                end=paste0(year2,"-",end),
                start=lubridate::ymd(start),
-               end=lubridate::ymd(end))
-    day1<-
-        reactive({
-            data%>%
-                filter(year==input$year1)%>%
-                distinct(date)
-        })
-
-    output$date2<-
+               end=lubridate::ymd(end)) 
+        # mutate(date=as.character(date)) %>%
+        # mutate(count=as.numeric(as.character(count)))
+    
+    output$update<-
         renderUI({
-            selectInput("d2","日付を選択してください。",
-                        choices=day1()
-            )
+            h5(paste0("2020-04-21記者発表資料から",date[1,1],"記者発表資料掲載分まで集計しています。"))
         })
-    shp2 <-read_sf("N03-190101_14_GML/N03-19_14_190101.shp",options = "ENCODING=CP932")
-
-    tetudo<-
-        read_sf("N02-19_GML/N02-19_Station2.shp",options = "ENCODING=CP932")
-    rosen<-
-      read_sf("N02-19_GML/N02-19_RailroadSection2.shp",options = "ENCODING=CP932")
-    do1<-
-      eventReactive(input$action,{
-        x<-input$x
-        y<-input$y
-        if(is.null(x)){
-            x<-date[1,1]
-        }
-
-                     date1<-lubridate::ymd(x)-as.numeric(y)+1
-                    data7.1<-
-                        data7%>%
-                        dplyr::filter(Fixed_Date>=date1,
-                                      Fixed_Date<=lubridate::ymd(x))%>%
-                        # dplyr::filter(Fixed_Date>="2021-04-24",
-                        #               Fixed_Date<="2021-04-24")%>%
-                        dplyr::group_by(Residential_City,X,Y)%>%
-                        summarise(count=n())%>%
-                        full_join(City)%>%
-                        mutate(count=ifelse(is.na(count),0,count))%>%
-                        mutate(N03_004=Residential_City)%>%
-                        ungroup()%>%
-                        select(-X,-Y)%>%
-                        #dplyr::filter(X>0,Y>0)%>%
-                        dplyr::filter(is.numeric(count))%>%
-                        ungroup()
-                    s<-
-                        data7.1%>%mutate(f=count>=10)%>%
-                        ungroup()%>%
-                        summarise(sum=sum(f))
-                    data7.1<-
-                        data7.1%>%
-                        mutate(sum=s)
-                    data7.2<-
-                        sp::merge(shp, data7.1,
-                                  by="N03_004", all=F,duplicateGeoms = TRUE)
-
-                    pal <- colorNumeric(palette=c("white","red"),domain=c(0,as.numeric(y)*50), reverse=F)
-
-
-                    pal2<-
-                        data7.2%>%
-                        dplyr::mutate(col=pal(count),
-                               col2=ifelse(count>300*as.numeric(y),"red",col),
-                               col2=ifelse(N03_004=="横浜市","gray",col2))
-                    pal3<-colorFactor(topo.colors(25),domain = tetudo$N02_004)
-                    if(input$onoff){
-                        leaflet(data7.2) %>%
-                            fitBounds(lng1=139.752206, lat1=35.153839, lng2=138.9488, lat2=35.645042)%>%
-                            #setView(lng=139.424343, lat=35.417843,zoom=10)%>%
-                            addProviderTiles(providers$CartoDB.Positron)%>%
-                            addPolygons(
-                                fillOpacity = 1,
-                                weight=1,
-                                color = "#666",
-                                fillColor = ~pal2$col2,
-                                label = paste0(data7.2$N03_004,data7.2$count,"人"),
-                                labelOptions = labelOptions(textsize = "15px")
-                            )%>%
-                            addLegend(data=pal2%>%
-                                          #distinct(flag,.keep_all = T)%>%
-                                          distinct(col2,.keep_all = T)%>%
-                                          filter(N03_004!="横浜市")%>%
-                                          arrange(count),
-                                      pal=pal,
-                                      values = c(0,as.numeric(y)*50),
-                                      position="bottomright",#color=~col2,labels=~count,
-                                      opacity = 1,
-                                      #labFormat = labelFormat(transform = function(x)x*x)
-                            )%>%
-                            addControl(tags$div(HTML(paste(date1,lubridate::ymd(x),sep = "~")))  , position = "topright")%>%
-                            addMarkers(139.274823,35.365831, label = "東海大学湘南キャンパス")%>%
-                            addMarkers(139.313644,35.407144, label = "東海大学伊勢原キャンパス")%>%
-                            addPolylines(data=tetudo,
-                                         color = ~pal3(N02_004),
-                                         label = paste(tetudo$N02_004,tetudo$N02_003),
-                                         labelOptions = labelOptions(textsize = "15px"),
-                                         group = tetudo$N02_004)%>%
-                            addPolylines(data=rosen,
-                                         color = ~pal3(N02_004),
-                                         label = paste(rosen$N02_004,rosen$N02_003),
-                                         labelOptions = labelOptions(textsize = "15px"),
-                                         group = rosen$N02_004)%>%
-                            addLayersControl(overlayGroups =tetudo$N02_004,
-                                             position = "bottomleft")
-                    }else{
-                        leaflet(data7.2) %>%
-                        fitBounds(lng1=139.752206, lat1=35.153839, lng2=138.9488, lat2=35.645042)%>%
-
-                        #setView(lng=139.424343, lat=35.417843,zoom=10)%>%
-                        addProviderTiles(providers$CartoDB.Positron)%>%
-                        addPolygons(
-                                    fillOpacity = 1,
-                                    weight=1,
-                                    color = "#666",
-                                    fillColor = ~pal2$col2,
-                                    label = paste0(data7.2$N03_004,data7.2$count,"人"),
-                                    labelOptions = labelOptions(textsize = "15px")
-                                    )%>%
-                        addLegend(data=pal2%>%
-                                      #distinct(flag,.keep_all = T)%>%
-                                      distinct(col2,.keep_all = T)%>%
-                                      filter(N03_004!="横浜市")%>%
-                                      arrange(count),
-                            pal=pal,
-                            values = c(0,as.numeric(y)*50),
-                                  position="bottomright",#color=~col2,labels=~count,
-                                  opacity = 1,
-                                  #labFormat = labelFormat(transform = function(x)x*x)
-                        )%>%
-                        addControl(tags$div(HTML(paste(date1,lubridate::ymd(x),sep = "~")))  , position = "topright")%>%
-                        addMarkers(139.274823,35.365831, label = "東海大学湘南キャンパス")%>%
-                        addMarkers(139.313644,35.407144, label = "東海大学伊勢原キャンパス")
-                    }
-      })
+    output$date<-
+        renderUI({
+            dateInput("x",
+                      label = "日付を入力してください",
+                      min = "2020-04-21",
+                      max = date[1,1],
+                      value = date[1,1])
+        })
+    
     output$covid_map <- renderLeaflet({
-        do1()
-
-
-    }
-    )
-    do2<-
-      eventReactive(input$action,{
-        x<-input$x
-        if(is.null(x)){
-            x<-date[1,1]
-        }
-        data1<-data%>%
-            dplyr::filter(end<=lubridate::ymd(x),
-                          start<=lubridate::ymd(x)-6)%>%
-            group_by(N03_004)%>%
-            mutate(rank=dense_rank(desc(end)))%>%
-            filter(rank==1)%>%
-            ungroup()
-
-        yoko_shp<-
-            sp::merge(shp2, data1,
-                          #filter(year==input$year1,date%in%input$d2)
-                      by=c("N03_004","N03_003"), all=F,duplicateGeoms = TRUE)
-
-        pal <- colorNumeric(palette=c("white","red"),domain=c(0,350), reverse=F)
-        pal3<-colorFactor(topo.colors(25),domain = tetudo$N02_004)
-        if(input$onoff){
-            yoko_shp%>%
-            leaflet() %>%
-            fitBounds(lng1=139.692206, lat1=35.328117, lng2=139.474443, lat2=35.573221)%>%
-            #fitBounds(lng1=139.124343, lat1=35.117843, lng2=139.652899, lat2=35.665052)%>%
-            #setView(lng=139.604343, lat=35.4547843,zoom=10)%>%
+        leaflet() %>%
+            fitBounds(lng1=MXY[[1]], lat1=MXY[[2]], lng2=MXY[[3]], lat2=MXY[[4]]) %>%
             addProviderTiles(providers$CartoDB.Positron) %>%
-            addPolygons(fillOpacity = 1,
-                        weight=1,
-                        color = "#666",
-                        fillColor = ~pal(yoko_shp$count),
-                        label = paste0(yoko_shp$N03_004,yoko_shp$count),
-                        labelOptions = labelOptions(textsize = "15px")
-            )%>%
-            addLegend(pal=pal,
-                      values = c(0,350),
-                      position="bottomright",
-                      opacity = 1)%>%
-            addControl(tags$div(HTML(unique(yoko_shp$date)))  , position = "topright")%>%
-            addPolylines(data=tetudo,
-                         color = ~pal3(N02_004),
-                         label = paste(tetudo$N02_004,tetudo$N02_003),
-                         labelOptions = labelOptions(textsize = "15px"),
-                         group = tetudo$N02_003)%>%
-            addPolylines(data=rosen,
-                         color = ~pal3(N02_004),
-                         label = paste(rosen$N02_004,rosen$N02_003),
-                         labelOptions = labelOptions(textsize = "15px"),
-                         group = rosen$N02_004)%>%
-                addLayersControl(overlayGroups =tetudo$N02_004,
-                                 position = "bottomleft")
-        }else{
-            yoko_shp%>%
-                leaflet() %>%
-                fitBounds(lng1=139.692206, lat1=35.328117, lng2=139.474443, lat2=35.553221)%>%
-                #fitBounds(lng1=139.124343, lat1=35.117843, lng2=139.652899, lat2=35.665052)%>%
-                #setView(lng=139.604343, lat=35.4547843,zoom=10)%>%
-                addProviderTiles(providers$CartoDB.Positron) %>%
-                addPolygons(fillOpacity = 1,
-                            weight=1,
-                            color = "#666",
-                            fillColor = ~pal(yoko_shp$count),
-                            label = paste0(yoko_shp$N03_004,yoko_shp$count),
-                            labelOptions = labelOptions(textsize = "15px")
-                            )%>%
-                addLegend(pal=pal,
-                          values = c(0,350),
-                          position="bottomright",
-                          opacity = 1)%>%
-                addControl(tags$div(HTML(unique(yoko_shp$date)))  , position = "topright")
-        }
-      })
+            #addTiles() %>%
+            addMarkers(139.274823,35.365831, label = "東海大学湘南キャンパス") %>%
+            addMarkers(139.313644,35.407144, label = "東海大学伊勢原キャンパス") %>%
+            addPolygons(data=shp, layerId = ~ID, fillOpacity = 1, weight = 1, color = "#666", fillColor = "white")#,
+        # highlightOptions = highlightOptions(color = "red", weight = 2, bringToFront = TRUE))
+    })
+    
     output$yoko_map<-renderLeaflet({
-        do2()
-
-    })
-    do3<-
-      eventReactive(input$action,{
-        x<-input$x
-        y<-input$y
-        if(is.null(x)){
-            x<-date[1,1]
-        }
-        date1<-lubridate::ymd(x)-as.numeric(y)+1
-        #集計
-        data7.1<-data7%>%
-            filter(Fixed_Date>=date1,Fixed_Date<=lubridate::ymd(x))%>%
-            group_by(Residential_City,X,Y)%>%
-            summarise(count=n())%>%
-            full_join(City)%>%
-            mutate(count=ifelse(is.na(count),0,count))%>%
-            dplyr::filter(is.numeric(count))%>%
-            #filter(X>0,Y>0)
-            select(-X,-Y)
-        jinko2<-left_join(data7.1,jinko,by=c("Residential_City"="City"))
-        jinko3<-jinko2%>%
-            mutate(count_j=count/jinko*100000)%>%
-            dplyr::filter(is.numeric(count_j))%>%
-            filter(!is.na(count_j))%>%
-            mutate(N03_004=Residential_City)
-        s<-
-            jinko3%>%mutate(f=count_j>=10)%>%
-            ungroup()%>%
-            summarise(sum=sum(f))
-        jinko3<-
-            jinko3%>%
-            mutate(sum=s$sum)
-        data7.2<-
-            sp::merge(shp, jinko3,
-                      by="N03_004", all=F,duplicateGeoms = TRUE)
-        # #色設定
-        pal <- colorNumeric(palette=c("white","red"),domain=c(0,as.numeric(y)*8), reverse=F)
-        pal2<-
-            data7.2%>%
-            mutate(col=pal(count_j),
-                   col2=ifelse(count_j>as.numeric(y)*8,"red",col))
-        pal3<-colorFactor(topo.colors(25),domain = tetudo$N02_004)
-        if(input$onoff){
-            leaflet(data7.2) %>%
-            fitBounds(lng1=139.752206, lat1=35.153839, lng2=138.9488, lat2=35.645042)%>%
-            #fitBounds(lng1=139.224343, lat1=35.217843, lng2=139.552899, lat2=35.565052)%>%
+        leaflet() %>%
+            fitBounds(lng1=MXY2[[1]], lat1=MXY2[[2]], lng2=MXY2[[3]], lat2=MXY2[[4]]) %>%
             addProviderTiles(providers$CartoDB.Positron) %>%
-            addPolygons(fillOpacity = 1,
-                        weight=1,
-                        color = "#666",
-                        #labelOptions = labelOptions(noHide = T, textOnly = TRUE),
-                        fillColor = ~pal2$col2,
-                        label = paste0(data7.2$N03_004,round(data7.2$count_j,2)),
-                        labelOptions = labelOptions(textsize = "15px")
-            )%>%
-            addLegend(data=pal2%>%
-                          distinct(col2,.keep_all = T)%>%
-                          arrange(count_j),
-                      position="bottomright",
-                      pal=pal,
-                      values = c(0,as.numeric(y)*8),
-                      #color=~col2,labels=~flag,
-                      opacity = 1,
-                      #labFormat = labelFormat(transform = function(x)x*x)
-            )%>%
-            addControl(tags$div(HTML(paste(date1,lubridate::ymd(x),sep = "~")))  , position = "topright")%>%
-            addMarkers(139.274823,35.365831, label = "東海大学湘南キャンパス")%>%
-            addMarkers(139.313644,35.407144, label = "東海大学伊勢原キャンパス")%>%
-            addPolylines(data=tetudo,
-                         color = ~pal3(N02_004),
-                         label = paste(tetudo$N02_004,tetudo$N02_003),
-                         labelOptions = labelOptions(textsize = "15px"),
-                         group = tetudo$N02_003)%>%
-            addPolylines(data=rosen,
-                         color = ~pal3(N02_004),
-                         label = paste(rosen$N02_004,rosen$N02_003),
-                         labelOptions = labelOptions(textsize = "15px"),
-                         group = rosen$N02_004)%>%
-                addLayersControl(overlayGroups =tetudo$N02_004,
-                                 position = "bottomleft")
-        }else{
-            leaflet(data7.2) %>%
-                fitBounds(lng1=139.752206, lat1=35.153839, lng2=138.9488, lat2=35.645042)%>%
-                #fitBounds(lng1=139.224343, lat1=35.217843, lng2=139.552899, lat2=35.565052)%>%
-                addProviderTiles(providers$CartoDB.Positron) %>%
-                addPolygons(fillOpacity = 1,
-                            weight=1,
-                            color = "#666",
-                            #labelOptions = labelOptions(noHide = T, textOnly = TRUE),
-                            fillColor = ~pal2$col2,
-                            label = paste0(data7.2$N03_004,round(data7.2$count_j,2)),
-                            labelOptions = labelOptions(textsize = "15px")
-                )%>%
-                addLegend(data=pal2%>%
-                              distinct(col2,.keep_all = T)%>%
-                              arrange(count_j),
-                          position="bottomright",
-                          pal=pal,
-                          values = c(0,as.numeric(y)*8),
-                          #color=~col2,labels=~flag,
-                          opacity = 1,
-                          #labFormat = labelFormat(transform = function(x)x*x)
-                )%>%
-                addControl(tags$div(HTML(paste(date1,lubridate::ymd(x),sep = "~")))  , position = "topright")%>%
-                addMarkers(139.274823,35.365831, label = "東海大学湘南キャンパス")%>%
-                addMarkers(139.313644,35.407144, label = "東海大学伊勢原キャンパス")
-        }
-      })
+            addPolygons(data=shp2, layerId = ~ID, fillOpacity = 1, weight = 1, color = "#666", fillColor = "white")
+    })
+    
     output$covid_map2 <- renderLeaflet({
-        do3()
-
-
-    })
-    do4<-
-      eventReactive(input$action,{
-        x<-input$x
-        if(is.null(x)){
-            x<-date[1,1]
-        }
-        data1<-data%>%
-            dplyr::filter(end<=lubridate::ymd(x),
-                          start<=lubridate::ymd(x)-6,
-                          lubridate::ymd(x)-6<=end)
-        data2<-
-            left_join(data1,#%>%
-                          #filter(year==input$year1,date%in%input$d2),
-                      jinko,by=c("N03_004"="City"))%>%
-            mutate(count_j=round(count/jinko*100000,2))
-        yoko_shp2<-
-            sp::merge(shp2, data2,
-                      by=c("N03_004","N03_003"), all=F,duplicateGeoms = TRUE)
-        pal <- colorNumeric(palette=c("white","red"),domain=c(0,56), reverse=F)
-        pal3<-colorFactor(topo.colors(25),domain = tetudo$N02_004)
-        if(input$onoff){
-            yoko_shp2%>%
-            leaflet() %>%
-            fitBounds(lng1=139.692206, lat1=35.328117, lng2=139.474443, lat2=35.573221)%>%
-            #fitBounds(lng1=139.124343, lat1=35.117843, lng2=139.652899, lat2=35.665052)%>%
-            #setView(lng=139.604343, lat=35.457843,zoom=10)%>%
+        leaflet() %>%
+            fitBounds(lng1=MXY[[1]], lat1=MXY[[2]], lng2=MXY[[3]], lat2=MXY[[4]]) %>%
             addProviderTiles(providers$CartoDB.Positron) %>%
-            addPolygons(fillOpacity = 1,
-                        weight=1,
-                        color = "#666",
-                        fillColor = ~pal(yoko_shp2$count_j),
-                        label = paste0(yoko_shp2$N03_004,yoko_shp2$count_j),
-                        labelOptions = labelOptions(textsize = "15px")
-            )%>%
-            addLegend(pal=pal,
-                      values = c(0,56),
-                      position="bottomright",
-                      opacity = 1)%>%
-            addControl(tags$div(HTML(unique(yoko_shp2$date))), position = "topright")%>%
-            addPolylines(data=tetudo,
-                         color = ~pal3(N02_004),
-                         label = paste(tetudo$N02_004,tetudo$N02_003),
-                         labelOptions = labelOptions(textsize = "15px"),
-                         group = tetudo$N02_003)%>%
-            addPolylines(data=rosen,
-                         color = ~pal3(N02_004),
-                         label = paste(rosen$N02_004,rosen$N02_003),
-                         labelOptions = labelOptions(textsize = "15px"),
-                         group = rosen$N02_004)%>%
-                addLayersControl(overlayGroups =tetudo$N02_004,
-                                 position = "bottomleft")
-        }else{
-            yoko_shp2%>%
-                leaflet() %>%
-                fitBounds(lng1=139.692206, lat1=35.328117, lng2=139.474443, lat2=35.573221)%>%
-                #fitBounds(lng1=139.124343, lat1=35.117843, lng2=139.652899, lat2=35.665052)%>%
-                #setView(lng=139.604343, lat=35.457843,zoom=10)%>%
-                addProviderTiles(providers$CartoDB.Positron) %>%
-                addPolygons(fillOpacity = 1,
-                            weight=1,
-                            color = "#666",
-                            fillColor = ~pal(yoko_shp2$count_j),
-                            label = paste0(yoko_shp2$N03_004,yoko_shp2$count_j),
-                            labelOptions = labelOptions(textsize = "15px")
-                )%>%
-                addLegend(pal=pal,
-                          values = c(0,56),
-                          position="bottomright",
-                          opacity = 1)%>%
-                addControl(tags$div(HTML(unique(yoko_shp2$date))), position = "topright")
-        }
-
-
-      })
+            addMarkers(139.274823,35.365831, label = "東海大学湘南キャンパス") %>%
+            addMarkers(139.313644,35.407144, label = "東海大学伊勢原キャンパス") %>%
+            addPolygons(data=shp, layerId = ~ID, fillOpacity = 1, weight = 1, color = "#666", fillColor = "white")
+        # %>%
+        #     addControl(tags$div(HTML(paste("更新ボタンを再度押してください")))  , position = "topright")
+    })
+    
     output$yoko_map2<-renderLeaflet({
-        do4()
+        leaflet() %>%
+            fitBounds(lng1=MXY2[[1]], lat1=MXY2[[2]], lng2=MXY2[[3]], lat2=MXY2[[4]]) %>%
+            addProviderTiles(providers$CartoDB.Positron) %>%
+            addPolygons(data=shp2, layerId = ~ID, fillOpacity = 1, weight = 1, color = "#666", fillColor = "white")
     })
+    
+    LD <- eventReactive(input$button1,ignoreNULL = FALSE, ignoreInit = FALSE,{
+        x=input$x
+        if(is.null(x)){
+            x=date$Fixed_Date[1]
+        }
+        
+        print(x)
+        date2=ymd(x)
+        date1=date2-7+1
+        
+        data7.1<-
+            data7%>%
+            dplyr::filter(Fixed_Date>=date1,
+                          Fixed_Date<=date2)%>%
+            dplyr::group_by(Residential_City,X,Y)%>%
+            summarise(count1=sum(Fixed_Date==date2),count7=n())%>%
+            ungroup() %>%
+            full_join(City)%>%
+            mutate(count1=ifelse(is.na(count1),0,count1))%>%
+            mutate(count7=ifelse(is.na(count7),0,count7))%>%
+            dplyr::mutate(col1=pal(count1),
+                          col12=ifelse(count1>300*as.numeric(1),"red",col1),
+                          col12=ifelse(Residential_City=="横浜市","gray",col12))%>%
+            dplyr::mutate(col7=pal2(count7),
+                          col72=ifelse(count7>300*as.numeric(7),"red",col7),
+                          col72=ifelse(Residential_City=="横浜市","gray",col72)) %>%
+            left_join(jinko,by=c("Residential_City"="City")) %>%
+            mutate(count_j1=count1/jinko*100000)%>%
+            mutate(count_j7=count7/jinko*100000)%>%
+            filter(!is.na(count_j1))%>%
+            dplyr::mutate(col_j1=pal3(count_j1),
+                          col_j12=ifelse(count_j1>8*as.numeric(1),"red",col_j1),
+                          col_j12=ifelse(Residential_City=="横浜市","gray",col_j12))%>%
+            dplyr::mutate(col_j7=pal4(count_j7),
+                          col_j72=ifelse(count_j1>8*as.numeric(7),"red",col_j7),
+                          col_j72=ifelse(Residential_City=="横浜市","gray",col_j72)) %>%
+            rename(N03_004=Residential_City)
+        
+        data7.2<-
+            sp::merge(shp, data7.1,
+                      by="N03_004", all=F,duplicateGeoms = TRUE) %>%
+            mutate(date1) %>%
+            mutate(date2)
+        return(data7.2)
+    })
+    
+    observe({
+        y=input$y
+        data7.2=LD()
+        date1=unique(data7.2$date1)
+        date2=unique(data7.2$date2)
+        if(y==1){
+            leafletProxy("covid_map",data=data7.2) %>%
+                clearControls() %>%
+                # removeShape(layerId=paste0("X",1:nrow(rosen))) %>%
+                # removeShape(layerId=paste0("Y",1:nrow(tetudo))) %>%
+                removeShape(layerId=paste0("P",1:nrow(data7.2))) %>%
+                addPolygons(layerId=paste0("P",1:nrow(data7.2)),
+                            label = paste0(data7.2$N03_004," ",data7.2$count1,"人"),
+                            labelOptions = labelOptions(textsize = "15px"),
+                            opacity = 0,
+                            fillOpacity = 0) %>%
+                setShapeStyle(layerId = ~ID,
+                              fillColor = ~col12) %>%
+                addLegend(pal=pal,
+                          values = c(0,as.numeric(1)*50),
+                          position="bottomright",#color=~col2,labels=~count,
+                          opacity = 1) %>%
+                addControl(tags$div(HTML(paste(date2,date2,sep = "~")))  , position = "topright")
+            
+            leafletProxy("covid_map2",data=data7.2) %>%
+                clearControls() %>%
+                # removeShape(layerId=paste0("X",1:nrow(rosen))) %>%
+                # removeShape(layerId=paste0("Y",1:nrow(tetudo))) %>%
+                addPolygons(label = paste0(data7.2$N03_004," ",round(data7.2$count_j1,2),"人"),
+                            labelOptions = labelOptions(textsize = "15px"),
+                            opacity = 0,
+                            fillOpacity = 0) %>%
+                setShapeStyle(layerId = ~ID,
+                              fillColor = ~col_j12) %>%
+                addLegend(pal=pal3,
+                          values = c(0,as.numeric(1)*8),
+                          position="bottomright",#color=~col2,labels=~count,
+                          opacity = 1) %>%
+                addControl(tags$div(HTML(paste(date2,date2,sep = "~")))  , position = "topright")
+        }
+        if(y==7){
+            leafletProxy("covid_map",data=data7.2) %>%
+                clearControls() %>%
+                # removeShape(layerId=paste0("X",1:nrow(rosen))) %>%
+                # removeShape(layerId=paste0("Y",1:nrow(tetudo))) %>%
+                removeShape(layerId=paste0("P",1:nrow(data7.2))) %>%
+                addPolygons(layerId=paste0("P",1:nrow(data7.2)),
+                            label = paste0(data7.2$N03_004," ",data7.2$count7,"人"),
+                            labelOptions = labelOptions(textsize = "15px"),
+                            opacity = 0,
+                            fillOpacity = 0) %>%
+                # addLabelOnlyMarkers(layerId = ~ID,
+                #                     label = paste0(data7.2$N03_004," ",data7.2$count7,"人"),
+                #                                 labelOptions = labelOptions(textsize = "15px")) %>%
+                setShapeStyle(layerId = ~ID,
+                              fillColor = ~col72) %>%
+                addLegend(pal=pal2,
+                          values = c(0,as.numeric(7)*50),
+                          position="bottomright",#color=~col2,labels=~count,
+                          opacity = 1) %>%
+                addControl(tags$div(HTML(paste(date1,date2,sep = "~")))  , position = "topright")
+            
+            leafletProxy("covid_map2",data=data7.2) %>%
+                clearControls() %>%
+                # removeShape(layerId=paste0("X",1:nrow(rosen))) %>%
+                # removeShape(layerId=paste0("Y",1:nrow(tetudo))) %>%
+                addPolygons(label = paste0(data7.2$N03_004," ",round(data7.2$count_j7,2),"人"),
+                            labelOptions = labelOptions(textsize = "15px"),
+                            opacity = 0,
+                            fillOpacity = 0) %>%
+                setShapeStyle(layerId = ~ID,
+                              fillColor = ~col_j72) %>%
+                addLegend(pal=pal4,
+                          values = c(0,as.numeric(7)*8),
+                          position="bottomright",#color=~col2,labels=~count,
+                          opacity = 1) %>%
+                addControl(tags$div(HTML(paste(date1,date2,sep = "~")))  , position = "topright")
+        }
+    })
+    
+    LD_yoko <- eventReactive(input$button1,ignoreNULL = FALSE, ignoreInit = FALSE,{
+        x=input$x
+        if(is.null(x)){
+            x=date$Fixed_Date[1]
+        }
+        
+        print(x)
+        date2=ymd(x)
+        date1=date2-7+1
+        
+        data0<-data %>%
+            dplyr::filter(end<=date2,
+                          end>=date1)%>%
+            left_join(jinko,by=c("N03_004"="City")) %>%
+            mutate(count_j=count/jinko*100000)
+        
+        data1 <-
+            sp::merge(shp2,data0,
+                      by=c("N03_003","N03_004"), all=F,duplicateGeoms = TRUE) %>%
+            mutate(date1) %>%
+            mutate(date2)
+        return(data1)
+    })
+    
+    observe({
+        data1=LD_yoko()
+        date1=unique(data1$start)
+        date2=unique(data1$end)
+        
+        leafletProxy("yoko_map",data=data1) %>%
+            clearControls() %>%
+            # removeShape(layerId=paste0("X",1:nrow(rosen))) %>%
+            # removeShape(layerId=paste0("Y",1:nrow(tetudo))) %>%
+            # removeShape(layerId=paste0("P",1:nrow(data7.2))) %>%
+            addPolygons(layerId=paste0("P",1:nrow(data1)),
+                        label = paste0(data1$N03_004," ",data1$count,"人"),
+                        labelOptions = labelOptions(textsize = "15px"),
+                        opacity = 0,
+                        fillOpacity = 0) %>%
+            setShapeStyle(layerId = ~ID,
+                          fillColor = ~pal2(count)) %>%
+            addLegend(pal=pal2,
+                      values = c(0,as.numeric(7)*50),
+                      position="bottomright",#color=~col2,labels=~count,
+                      opacity = 1) %>%
+            addControl(tags$div(HTML(paste(date1,date2,sep = "~")))  , position = "topright")
+        
+        leafletProxy("yoko_map2",data=data1) %>%
+            clearControls() %>%
+            # removeShape(layerId=paste0("X",1:nrow(rosen))) %>%
+            # removeShape(layerId=paste0("Y",1:nrow(tetudo))) %>%
+            # removeShape(layerId=paste0("P",1:nrow(data7.2))) %>%
+            addPolygons(layerId=paste0("P",1:nrow(data1)),
+                        label = paste0(data1$N03_004," ",round(data1$count_j,2),"人"),
+                        labelOptions = labelOptions(textsize = "15px"),
+                        opacity = 0,
+                        fillOpacity = 0) %>%
+            setShapeStyle(layerId = ~ID,
+                          fillColor = ~pal4(count_j)) %>%
+            addLegend(pal=pal4,
+                      values = c(0,as.numeric(7)*8),
+                      position="bottomright",#color=~col2,labels=~count,
+                      opacity = 1) %>%
+            addControl(tags$div(HTML(paste(date1,date2,sep = "~")))  , position = "topright")
+    })
+    
+    observe({
+        # input$button1
+        # input$y
+        if(input$onoff){
+            leafletProxy("covid_map") %>%
+                addPolylines(data=rosen,color = "black",weight = 1,
+                             layerId=paste0("X",1:nrow(rosen))) %>%
+                addPolylines(data=tetudo,
+                             color = ~pal5(ln),
+                             opacity = 1,
+                             label = paste(tetudo$N02_004,tetudo$N02_003,tetudo$N02_005),
+                             labelOptions = labelOptions(textsize = "15px"),
+                             layerId=paste0("Y",1:nrow(tetudo)),
+                )
+            leafletProxy("covid_map2") %>%
+                addPolylines(data=rosen,color = "black",weight = 1,
+                             layerId=paste0("X",1:nrow(rosen))) %>%
+                addPolylines(data=tetudo,
+                             color = ~pal5(ln),
+                             opacity = 1,
+                             label = paste(tetudo$N02_004,tetudo$N02_003,tetudo$N02_005),
+                             labelOptions = labelOptions(textsize = "15px"),
+                             layerId=paste0("Y",1:nrow(tetudo)),
+                )
+            leafletProxy("yoko_map") %>%
+                addPolylines(data=rosen,color = "black",weight = 1,
+                             layerId=paste0("X",1:nrow(rosen))) %>%
+                addPolylines(data=tetudo,
+                             color = ~pal5(ln),
+                             opacity = 1,
+                             label = paste(tetudo$N02_004,tetudo$N02_003,tetudo$N02_005),
+                             labelOptions = labelOptions(textsize = "15px"),
+                             layerId=paste0("Y",1:nrow(tetudo)),
+                )
+            leafletProxy("yoko_map2") %>%
+                addPolylines(data=rosen,color = "black",weight = 1,
+                             layerId=paste0("X",1:nrow(rosen))) %>%
+                addPolylines(data=tetudo,
+                             color = ~pal5(ln),
+                             opacity = 1,
+                             label = paste(tetudo$N02_004,tetudo$N02_003,tetudo$N02_005),
+                             labelOptions = labelOptions(textsize = "15px"),
+                             layerId=paste0("Y",1:nrow(tetudo)),
+                )
+        }
+        else{
+            leafletProxy("covid_map") %>%
+                removeShape(layerId=paste0("X",1:nrow(rosen))) %>%
+                removeShape(layerId=paste0("Y",1:nrow(tetudo)))
+            leafletProxy("covid_map2") %>%
+                removeShape(layerId=paste0("X",1:nrow(rosen))) %>%
+                removeShape(layerId=paste0("Y",1:nrow(tetudo)))
+            leafletProxy("yoko_map") %>%
+                removeShape(layerId=paste0("X",1:nrow(rosen))) %>%
+                removeShape(layerId=paste0("Y",1:nrow(tetudo)))
+            leafletProxy("yoko_map2") %>%
+                removeShape(layerId=paste0("X",1:nrow(rosen))) %>%
+                removeShape(layerId=paste0("Y",1:nrow(tetudo)))
+        }
+    })
+    
+    vals <- reactiveValues(counter = 0)
+    observe({
+        print(vals$counter)
+        if(isolate(vals$counter)==0&input$tabset=="tab2"){
+            vals$counter=1
+            y=input$y
+            data7.2=LD()
+            date1=unique(data7.2$date1)
+            date2=unique(data7.2$date2)
+            if(y==1){
+                leafletProxy("covid_map2",data=data7.2) %>%
+                    clearControls() %>%
+                    # removeShape(layerId=paste0("X",1:nrow(rosen))) %>%
+                    # removeShape(layerId=paste0("Y",1:nrow(tetudo))) %>%
+                    addPolygons(label = paste0(data7.2$N03_004," ",round(data7.2$count_j1,2),"人"),
+                                labelOptions = labelOptions(textsize = "15px"),
+                                opacity = 0,
+                                fillOpacity = 0) %>%
+                    setShapeStyle(layerId = ~ID,
+                                  fillColor = ~col_j12) %>%
+                    addLegend(pal=pal3,
+                              values = c(0,as.numeric(1)*8),
+                              position="bottomright",#color=~col2,labels=~count,
+                              opacity = 1) %>%
+                    addControl(tags$div(HTML(paste(date2,date2,sep = "~")))  , position = "topright")
+            }
+            if(y==7){
+                leafletProxy("covid_map2",data=data7.2) %>%
+                    clearControls() %>%
+                    # removeShape(layerId=paste0("X",1:nrow(rosen))) %>%
+                    # removeShape(layerId=paste0("Y",1:nrow(tetudo))) %>%
+                    addPolygons(label = paste0(data7.2$N03_004," ",round(data7.2$count_j7,2),"人"),
+                                labelOptions = labelOptions(textsize = "15px"),
+                                opacity = 0,
+                                fillOpacity = 0) %>%
+                    setShapeStyle(layerId = ~ID,
+                                  fillColor = ~col_j72) %>%
+                    addLegend(pal=pal4,
+                              values = c(0,as.numeric(7)*8),
+                              position="bottomright",#color=~col2,labels=~count,
+                              opacity = 1) %>%
+                    addControl(tags$div(HTML(paste(date1,date2,sep = "~")))  , position = "topright")
+            }
+            
+            data1=LD_yoko()
+            date1=unique(data1$start)
+            date2=unique(data1$end)
+            
+            leafletProxy("yoko_map2",data=data1) %>%
+                clearControls() %>%
+                # removeShape(layerId=paste0("X",1:nrow(rosen))) %>%
+                # removeShape(layerId=paste0("Y",1:nrow(tetudo))) %>%
+                # removeShape(layerId=paste0("P",1:nrow(data7.2))) %>%
+                addPolygons(layerId=paste0("P",1:nrow(data1)),
+                            label = paste0(data1$N03_004," ",round(data1$count_j,2),"人"),
+                            labelOptions = labelOptions(textsize = "15px"),
+                            opacity = 0,
+                            fillOpacity = 0) %>%
+                setShapeStyle(layerId = ~ID,
+                              fillColor = ~pal4(count_j)) %>%
+                addLegend(pal=pal4,
+                          values = c(0,as.numeric(7)*8),
+                          position="bottomright",#color=~col2,labels=~count,
+                          opacity = 1) %>%
+                addControl(tags$div(HTML(paste(date1,date2,sep = "~")))  , position = "topright")
+            
+            if(input$onoff){
+                leafletProxy("covid_map2") %>%
+                    addPolylines(data=rosen,color = "black",weight = 1,
+                                 layerId=paste0("X",1:nrow(rosen))) %>%
+                    addPolylines(data=tetudo,
+                                 color = ~pal5(ln),
+                                 opacity = 1,
+                                 label = paste(tetudo$N02_004,tetudo$N02_003,tetudo$N02_005),
+                                 labelOptions = labelOptions(textsize = "15px"),
+                                 layerId=paste0("Y",1:nrow(tetudo)))
+                leafletProxy("yoko_map2") %>%
+                    addPolylines(data=rosen,color = "black",weight = 1,
+                                 layerId=paste0("X",1:nrow(rosen))) %>%
+                    addPolylines(data=tetudo,
+                                 color = ~pal5(ln),
+                                 opacity = 1,
+                                 label = paste(tetudo$N02_004,tetudo$N02_003,tetudo$N02_005),
+                                 labelOptions = labelOptions(textsize = "15px"),
+                                 layerId=paste0("Y",1:nrow(tetudo)))
+            }
+        }
+    })
+})
 
 
-    })
+
+

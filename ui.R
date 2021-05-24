@@ -10,10 +10,14 @@ if(!require(shinyWidgets)){
     install.packages("shinyWidgets")
 }
 library(shinyWidgets)
+
+source("setShapeStyle.R")
+
 shinyUI(fluidPage(
+    leafletjs,
     # Application title
     titlePanel("神奈川県内の新型コロナ感染動向　市区町村別のコロプレスマップ"),
-
+    
     sidebarLayout(
         sidebarPanel(
             tags$head(tags$style(type="text/css", "
@@ -38,50 +42,51 @@ shinyUI(fluidPage(
             h4("市区町村別の感染者数"),
             h5("横浜市のみ、区単位の結果を右の図で表示しています。このときの結果は一週間ごとの集計となっています。"),
             uiOutput("date"),
+            actionButton("button1","更新"),
             #numericInput("y",label = h5("累積日数"),value="14"),
             radioButtons("y",label = "累積日数を設定してください",
                          c("1日"="1",
                            "7日"="7")
-                         ),
+            ),
             switchInput("onoff",
                         label="駅の表示"),
-            actionButton("action",
-                         label="更新"),
             width=3
             
-                     
+            
         ),
         
         
         
         # Show a plot of the generated distribution
-        mainPanel(tabsetPanel(type = "tabs",
-                              tabPanel("累積感染者数",
+        mainPanel(tabsetPanel(type = "tabs",id="tabset",
+                              tabPanel("累積感染者数",value = "tab1",
                                        fluidRow(
-                                       tags$style(type = "text/css", "#covid_map {height: calc(70vh - 15px) !important;}",
-                                                  "#yoko_map {height: calc(70vh - 15px) !important;}"),
-                                       column(8,
-                                              h4(strong("神奈川県全体の状況")),
-                                              leafletOutput("covid_map")),
-                                       column(4,
-                                              h4(strong("横浜市の状況")),
-                                              leafletOutput("yoko_map")
-                                              )
+                                           tags$style(type = "text/css", "#covid_map {height: calc(70vh - 15px) !important;}",
+                                                      "#yoko_map {height: calc(70vh - 15px) !important;}"),
+                                           column(8,
+                                                  h4(strong("神奈川県全体の状況")),
+                                                  leafletOutput("covid_map"),
+                                                  p("2021年5月12日～15日に東海大学湘南キャンパス男子柔道部にて累計56名の感染が発表されました。")),
+                                           column(4,
+                                                  h4(strong("横浜市の状況")),
+                                                  leafletOutput("yoko_map")
+                                           )
                                        )),
                               
-                              tabPanel("10万人当たりの累積感染者数",
+                              tabPanel("10万人当たりの累積感染者数",value = "tab2",
                                        fluidRow(
-                                       tags$style(type = "text/css", "#covid_map2 {height: calc(70vh - 15px) !important;}",
-                                                  "#yoko_map2 {height: calc(70vh - 15px) !important;}"),
-                                       column(8,
-                                              h4(strong("神奈川県全体の状況")),
-                                              leafletOutput("covid_map2"),
-                                              p("注意：清川村、三浦市など人口が少ない市町村では10万人当たりの感染者数の色が濃くなることがあります。"),),
-                                       
-                                       column(4,
-                                              h4(strong("横浜市の状況")),
-                                              leafletOutput("yoko_map2"),
-                                              )
+                                           tags$style(type = "text/css", "#covid_map2 {height: calc(70vh - 15px) !important;}",
+                                                      "#yoko_map2 {height: calc(70vh - 15px) !important;}"),
+                                           column(8,
+                                                  h4(strong("神奈川県全体の状況")),
+                                                  leafletOutput("covid_map2"),
+                                                  p("注意：清川村、三浦市など人口が少ない市町村では10万人当たりの感染者数の色が濃くなることがあります。"),
+                                                  p("2021年5月12日～15日に東海大学湘南キャンパス男子柔道部にて累計56名の感染が発表されました。")),
+                                           
+                                           column(4,
+                                                  h4(strong("横浜市の状況")),
+                                                  leafletOutput("yoko_map2"),
+                                           )
                                        )),
                               tabPanel("謝辞および参考文献",
                                        h4(strong("謝辞")),
@@ -105,8 +110,8 @@ shinyUI(fluidPage(
                                        p(""),
                                        p("本サイトでは、横浜市、横須賀市、相模原市、藤沢市は発表日を他の市町村は陽性判明日を元に感染者の集計を行っています。"),
                                        p("東海大学大学院理学研究科　棚橋真弓")),
-                                tabPanel("ヘルプ",
-                                         h4(strong("PC推奨環境")),#strong 文字を太くする
+                              tabPanel("ヘルプ",
+                                       h4(strong("PC推奨環境")),#strong 文字を太くする
                                        h5("<OS>"),
                                        p("Windows10"),
                                        h5("<PC推奨ブラウザ>"),
@@ -125,11 +130,11 @@ shinyUI(fluidPage(
                                        p("左クリックをしながら、マウスを動かすことで、地図を動かすことができます。"),
                                        p("・駅(路線図)を表示したい場合"),
                                        p("設定にある駅の表示を  クリックし、スイッチをオンしてください。"),
-                                       )
-                              ),
-                  width=9
-                  )
+                              )
+        ),
+        width=9
         )
+    )
     
     
 )
