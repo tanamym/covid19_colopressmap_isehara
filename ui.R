@@ -66,7 +66,7 @@ shinyUI(fluidPage(
                                            column(8,
                                                   h4(strong("神奈川県全体の状況")),
                                                   leafletOutput("covid_map"),
-                                                  p("2021年5月12日～15日に東海大学湘南キャンパス男子柔道部にて累計56名の感染が発表されました。")),
+                                                  ),
                                            column(4,
                                                   h4(strong("横浜市の状況")),
                                                   leafletOutput("yoko_map")
@@ -81,7 +81,7 @@ shinyUI(fluidPage(
                                                   h4(strong("神奈川県全体の状況")),
                                                   leafletOutput("covid_map2"),
                                                   p("注意：清川村、三浦市など人口が少ない市町村では10万人当たりの感染者数の色が濃くなることがあります。"),
-                                                  p("2021年5月12日～15日に東海大学湘南キャンパス男子柔道部にて累計56名の感染が発表されました。")),
+                                                  ),
                                            
                                            column(4,
                                                   h4(strong("横浜市の状況")),
