@@ -30,7 +30,10 @@ if(!require(data.table)){
     install.packages("data.table")
 }
 library(data.table)
-
+if(!require(curl)){
+    install.packages("curl")
+}
+library(curl)
 load("Dataset.RData")
 
 shinyServer(function(input, output, session) {
