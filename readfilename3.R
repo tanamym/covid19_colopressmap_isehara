@@ -284,15 +284,15 @@ repeat{
         filter(str_length(.)<=45) %>%
         rename("html"=".")%>%
         mutate(html=paste0("https://www.city.kawasaki.jp/350/",html))
-      html_top3[nrow(html_top3)+1,1]<-"https://www.city.kawasaki.jp/350/cmsfiles/contents/0000115/115886/2021061502.pdf"
-      #html_top3[nrow(html_top3)+1,1]<-"https://www.city.kawasaki.jp/350/cmsfiles/contents/0000115/115886/202105072.pdf"
-      html_top3[nrow(html_top3)+1,1]<-"https://www.city.kawasaki.jp/350/cmsfiles/contents/0000115/115886/202104012.pdf"
-      #html_top3[nrow(html_top3)+1,1]<-"https://www.city.kawasaki.jp/350/cmsfiles/contents/0000115/115886/202103207.pdf"
-      html_top3[nrow(html_top3)+1,1]<-"https://www.city.kawasaki.jp/350/cmsfiles/contents/0000115/115886/202107212.pdf"
-      html_top3[nrow(html_top3)+1,1]<-"https://www.city.kawasaki.jp/350/cmsfiles/contents/0000115/115886/202107302.pdf"
+      # html_top3[nrow(html_top3)+1,1]<-"https://www.city.kawasaki.jp/350/cmsfiles/contents/0000115/115886/2021061502.pdf"
+      # #html_top3[nrow(html_top3)+1,1]<-"https://www.city.kawasaki.jp/350/cmsfiles/contents/0000115/115886/202105072.pdf"
+      # html_top3[nrow(html_top3)+1,1]<-"https://www.city.kawasaki.jp/350/cmsfiles/contents/0000115/115886/202104012.pdf"
+      # #html_top3[nrow(html_top3)+1,1]<-"https://www.city.kawasaki.jp/350/cmsfiles/contents/0000115/115886/202103207.pdf"
+      # html_top3[nrow(html_top3)+1,1]<-"https://www.city.kawasaki.jp/350/cmsfiles/contents/0000115/115886/202107212.pdf"
+      # html_top3[nrow(html_top3)+1,1]<-"https://www.city.kawasaki.jp/350/cmsfiles/contents/0000115/115886/202107302.pdf"
       html_top3<- 
         html_top3%>%
-        filter(str_detect(html,"202108"))
+        filter(str_detect(html,"2108"))
       ####
       # url2<-html_top2[hn,]
       # #url<-html_top2[2,]
@@ -479,36 +479,18 @@ repeat{
       kawasaki2<-
         kawa3%>%
         rbind(read.csv("kawasaki202107.csv"))%>%
-        rename("list"="居住地","Fixed_Date"="確定日",
+        rename("list"="居住地","Fixed_Date2"="確定日",
                "Residential_City"="居住市区町村",
                "Residential_Pref"="居住都道府県",
                "Hospital_Pref"="受診都道府県","note"="備考",
                "Age"="年代","Sex"="性別","PR_Date"="発表日")%>%
         #filter(as.Date(PR_Date)>=as.Date("2021-04-01"))%>%
         select(-番号,-番号2)%>%
-        rbind(read.csv("kawasaki202106.csv"))
-      # kawasaki2<-
-      #   kawa3%>%
-      #   rename("list"="居住地","Fixed_Date"="確定日",
-      #          "Residential_City"="居住市区町村",
-      #          "Residential_Pref"="居住都道府県",
-      #          "Hospital_Pref"="受診都道府県","note"="備考",
-      #          "Age"="年代","Sex"="性別","PR_Date"="発表日")%>%
-      #   filter(as.Date(PR_Date)<as.Date("2021-07-01"))%>%
-      #   select(-番号,-番号2)
-      # write.csv(kawasaki2,"kawasaki202106.csv",row.names = F)
+        rbind(read.csv("kawasaki202106.csv")%>%rename("Fixed_Date2"="Fixed_Date"))%>%
+        mutate(Fixed_Date=PR_Date)
+
       
-      kawasaki1<-
-        rbind(kawa202012#,#kawa202101,#kawa202102,kawa202103
-        )%>%
-        mutate(発表日=確定日)%>%
-        rename("list"="居住地","Fixed_Date"="確定日",
-               "Residential_City"="居住市区町村",
-               "Residential_Pref"="居住都道府県",
-               "Hospital_Pref"="受診都道府県","note"="備考",
-               "Age"="年代","Sex"="性別","PR_Date"="発表日")%>%
-        select(-番号,-番号2)%>%
-        filter(Fixed_Date!="")
+      kawasaki1<-read.csv("kawasaki202012.csv")
       
       kawasaki4<-
         rbind(kawasaki1,kawasaki2)
@@ -714,6 +696,10 @@ repeat{
       #   chigasaki3%>%
       #   mutate(PR_Date=Fixed_Date,
       #          Age=NA,Sex=NA)
+      # chigasaki3<-
+      #   chigasaki3%>%
+      #   rename("Fixed_Date2"="Fixed_Date")%>%
+      #   mutate(Fixed_Date=PR_Date)
       chigasaki2<-
         chi5%>%
         mutate(陽性確定日 = ifelse(str_detect(陽性確定日,"12月"),
@@ -723,42 +709,12 @@ repeat{
         mutate(陽性確定日 = str_replace(陽性確定日,"日",""))%>%
         select(年代,性別,居住地,陽性確定日,発表日)%>%
         #select(-年代,-性別) %>%
-        rename("Fixed_Date"="陽性確定日","Residential_City"="居住地",
+        rename("Fixed_Date2"="陽性確定日","Residential_City"="居住地",
                "Age"="年代","Sex"="性別","PR_Date"="発表日")%>%
+        mutate(Fixed_Date=PR_Date)%>%
         filter(!str_detect(Fixed_Date,"NULL"))
       chigasaki1<-
-        rbind(chi202012%>%
-                mutate(陽性確定日 = paste0("2020-",str_replace(陽性確定日,"月","-"))
-                )%>% 
-                mutate(陽性確定日 = str_replace(陽性確定日,"日",""))%>%
-                select(年代,性別,居住地,陽性確定日)#,
-              # chi202101 %>%
-              #   mutate(陽性確定日 = ifelse(str_detect(陽性確定日,"12月"),
-              #                         paste0("2020-",str_replace(陽性確定日,"月","-")),
-              #                         paste0("2021-",str_replace(陽性確定日,"月","-"))
-              #   ) )%>%
-              #   mutate(陽性確定日 = str_replace(陽性確定日,"日",""))%>%
-              #   select(年代,性別,居住地,陽性確定日),
-              # chi202102 %>%
-              #   mutate(陽性確定日 = ifelse(str_detect(陽性確定日,"12月"),
-              #                         paste0("2020-",str_replace(陽性確定日,"月","-")),
-              #                         paste0("2021-",str_replace(陽性確定日,"月","-"))
-              #   ) )%>%
-              #   mutate(陽性確定日 = str_replace(陽性確定日,"日",""))%>%
-              #   select(年代,性別,居住地,陽性確定日)#,
-              # chi202103 %>%
-              #   mutate(陽性確定日 = ifelse(str_detect(陽性確定日,"12月"),
-              #                         paste0("2020-",str_replace(陽性確定日,"月","-")),
-              #                         paste0("2021-",str_replace(陽性確定日,"月","-"))
-              #   ) )%>%
-              #   mutate(陽性確定日 = str_replace(陽性確定日,"日",""))%>%
-              #   select(年代,性別,居住地,陽性確定日)
-        ) %>%
-        #select(-年代,-性別) %>%
-        mutate(発表日=陽性確定日)%>%
-        rename("Fixed_Date"="陽性確定日","Residential_City"="居住地",
-               "Age"="年代","Sex"="性別","PR_Date"="発表日")%>%
-        filter(!str_detect(Fixed_Date,"NULL"))
+        read.csv("chigasaki202012.csv")
       
       chigasaki4<-
         rbind(chigasaki1,chigasaki2,chigasaki3)
@@ -1463,6 +1419,7 @@ repeat{
         # filter(!is.na(No)) %>%
         mutate(Hos="藤沢") %>%
         mutate(Date=ifelse(No>=4458&No<=4480,"2021年08月14日",Date))%>%
+        mutate(Date=ifelse(No>=4516&No<=4564,"2021年08月15日",Date))%>%
         mutate(Date=as.Date(Date,format="%Y年%m月%d日")) %>%
         arrange(desc(No),desc(Date))
       
@@ -1626,11 +1583,10 @@ repeat{
                Residential_Pref="神奈川県"
         )%>%
         mutate(PR_Date=as.Date(PR_Date))%>%
-        mutate(Fixed_Date=as.Date(Fixed_Date))%>%
+        mutate(Fixed_Date=as.Date(Fixed_Date),
+               Fixed_Date2=as.Date(Fixed_Date2))%>%
         left_join(xy,by="Residential_City")%>%
         #filter(!is.na(X))%>%
-        mutate(Fixed_Date2=Fixed_Date,
-               Fixed_Date=PR_Date)%>%
         mutate(Hos="茅ヶ崎市")%>%
         mutate(note=NA)
       
@@ -1652,14 +1608,12 @@ repeat{
         read.csv("kawasaki.csv") %>%
         select(-X)%>%
         mutate(Fixed_Date=as.Date(Fixed_Date),
-               PR_Date=as.Date(PR_Date),)%>%
+               PR_Date=as.Date(PR_Date),
+               Fixed_Date2=as.Date(Fixed_Date2))%>%
         left_join(list1)%>%
-        select(-note,-管内,-Residential_City)%>%
+        select(-管内,-Residential_City)%>%
         rename("Residential_City"="list")%>%
-        mutate(Fixed_Date2=Fixed_Date,
-               Fixed_Date=PR_Date)%>%
-        mutate(Hos="川崎市")%>%
-        mutate(note=NA)
+        mutate(Hos="川崎市")
       
       data<-bind_rows(data2,data3,kanagawa2,kawasaki,chigasaki)%>%
         # select(Fixed_Date,Hospital_Pref,Residential_Pref,Residential_City,Age,
