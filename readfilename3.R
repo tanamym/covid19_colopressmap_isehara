@@ -235,6 +235,10 @@ repeat{
       # kanagawa3<-kanagawa3%>%
       #   mutate(PR_Date=Fixed_Date,
       #          Sex=NA,Age=NA)
+      # kanagawa3<-
+      #   kanagawa3%>%
+      #   rename("Fixed_Date2"="Fixed_Date")%>%
+      #   mutate(Fixed_Date=PR_Date)
       kanagawa5<-
         res5%>%
         mutate(判明日 = ifelse(str_detect(判明日,"12月"),
@@ -249,45 +253,14 @@ repeat{
         ####
         #変更####
       select(保健所,居住地,判明日,発表日,年代,性別)%>%
-        rename("Fixed_Date"="判明日","note"="保健所","Residential_City"="居住地",
-               "Age"="年代","Sex"="性別","PR_Date"="発表日")
+        rename("Fixed_Date2"="判明日","note"="保健所","Residential_City"="居住地",
+               "Age"="年代","Sex"="性別","PR_Date"="発表日")%>%
+        mutate(Fixed_Date=PR_Date)
       ####
       
       kanagawa1<-
-        rbind(kanagawa202012%>%
-                mutate(判明日 = paste0("2020-",str_replace(判明日,"月","-"))
-                )%>% 
-                mutate(判明日 = str_replace(判明日,"日",""))%>%
-                mutate(発表日=判明日)%>%
-                select(年代,性別,保健所,居住地,判明日,発表日)#,
-              # kanagawa202101 %>%
-              #   mutate(判明日 = ifelse(str_detect(判明日,"12月"),
-              #                       paste0("2020-",str_replace(判明日,"月","-")),
-              #                       paste0("2021-",str_replace(判明日,"月","-"))
-              #   ))%>%
-              #   mutate(判明日 = str_replace(判明日,"日",""))%>%
-              #   mutate(発表日=判明日)%>%
-              #   select(年代,性別,保健所,居住地,判明日,発表日),
-              # kanagawa202102 %>%
-              #   mutate(判明日 = ifelse(str_detect(判明日,"12月"),
-              #                       paste0("2020-",str_replace(判明日,"月","-")),
-              #                       paste0("2021-",str_replace(判明日,"月","-"))
-              #   ))%>%
-              #   mutate(判明日 = str_replace(判明日,"日",""))%>%
-              #   mutate(発表日=判明日)%>%
-              #   select(年代,性別,保健所,居住地,判明日,発表日)#,
-              # kanagawa202103 %>%
-              #   mutate(判明日 = ifelse(str_detect(判明日,"12月"),
-              #                       paste0("2020-",str_replace(判明日,"月","-")),
-              #                       paste0("2021-",str_replace(判明日,"月","-"))
-              #   ))%>%
-              #   mutate(判明日 = str_replace(判明日,"日",""))%>%
-              #   mutate(発表日=判明日)%>%
-              #   select(年代,性別,保健所,居住地,判明日,発表日)
-        )%>%
-        #select(-年代,-性別) %>%
-        rename("Fixed_Date"="判明日","note"="保健所","Residential_City"="居住地",
-               "Age"="年代","Sex"="性別","PR_Date"="発表日") 
+       read.csv("kanagawa202012.csv")
+       
       
       #これまでのデータと作成したデータを結合
       kanagawa4<-
@@ -942,6 +915,9 @@ repeat{
         if(p=="/documents/77029/20210702_yokohama.pdf"){
           path2<-"https://www.city.yokohama.lg.jp/city-info/koho-kocho/press/kenko/2021/0702covid-19.files/0001_20210702.pdf"
         }
+        if(p=="/documents/78017/202108071_yokohama.pdf"){
+          path2<-"https://www.city.yokohama.lg.jp/city-info/koho-kocho/press/kenko/2021/0807covid-19.files/0807covid-19.pdf"
+        }
         pdf<-pdf_text(path2)
         if(pdf[1]=="")print(paste("ファイル名:",path2,"を取得出来ません"))
         re<-regexpr("令和.+日\n",pdf[[1]])
@@ -1228,6 +1204,14 @@ repeat{
         mutate(Hos="相模原") %>%
         mutate(Date=as.Date(Date,format="%Y年%m月%d日")) %>%
         arrange(desc(Date),desc(No))
+      if(str_detect(Sys.Date(),"08")){
+        TDS2<-rbind(TDS2,data.frame(Date=c("2021-08-12","2021-08-12","2021-08-13","2021-08-13"),
+                                    No=c(7006,7019,7117,7248),
+                                    Age=c("20代","50代","40代","50代"),
+                                    Gender=c("女性","女性","女性","女性"),
+                                    Hos=c("相模原","相模原","相模原","相模原"),
+                                    City=c("相模原市","相模原市","相模原市","相模原市")))
+      }
       write.csv(TDS2,"sagamihara202108.csv",row.names = F)
       #sagamihara_today####
       Date<-format(Sys.Date(),"%m%d")
@@ -1312,7 +1296,22 @@ repeat{
           mutate(Hos="相模原") %>%
           mutate(Date=as.Date(Date,format="%Y年%m月%d日")) %>%
           arrange(desc(Date),desc(No))
-        
+        if(Date=="0812"){
+          TDS2<-rbind(TDS2,data.frame(Date=c("2021-08-12","2021-08-12"),
+                                      No=c(7006,7019),
+                                      Age=c("20代","50代"),
+                                      Gender=c("女性","女性"),
+                                      Hos=c("相模原","相模原"),
+                                      City=c("相模原市","相模原市")))
+        }
+        if(Date=="0813"){
+          TDS2<-rbind(TDS2,data.frame(Date=c("2021-08-13","2021-08-13"),
+                                      No=c(7117,7248),
+                                      Age=c("40代","50代"),
+                                      Gender=c("女性","女性"),
+                                      Hos=c("相模原","相模原"),
+                                      City=c("相模原市","相模原市")))
+        }
         saga_today<-TDS2
         write.csv(saga_today,"sagamiharatoday.csv",row.names = F)
     }else{
@@ -1463,6 +1462,7 @@ repeat{
         TDS %>%
         # filter(!is.na(No)) %>%
         mutate(Hos="藤沢") %>%
+        mutate(Date=ifelse(No>=4458&No<=4480,"2021年08月14日",Date))%>%
         mutate(Date=as.Date(Date,format="%Y年%m月%d日")) %>%
         arrange(desc(No),desc(Date))
       
@@ -1535,7 +1535,8 @@ repeat{
         select(-No)%>%
         rbind(patient%>%
                 filter(Fixed_Date>="2020-12-01",Fixed_Date<"2020-01-01") %>%
-                filter(Residential_City=="横浜市"))
+                filter(Residential_City=="横浜市"))%>%
+        mutate(note=NA)
       #横須賀市
       yokosuka<-read.csv("yokosuka.csv")%>%
         select(Fixed_Date,PR_Date,Sex,Age,City,Hos,Fixed_Date2)%>%
@@ -1543,16 +1544,19 @@ repeat{
         rbind(patient%>%
                 filter(Fixed_Date>="2020-12-01",Fixed_Date<"2020-05-01") %>%
                 filter(Residential_City=="横須賀市"))%>%
-        mutate(Residential_City=str_remove(Residential_City,".+郡"))
+        mutate(Residential_City=str_remove(Residential_City,".+郡"))%>%
+        mutate(note=NA)
       #相模原市
       sagamihara<-read.csv("sagamihara.csv")%>%
         select(-No)%>%
         rbind(patient%>%
                 filter(Fixed_Date>="2020-12-01",Fixed_Date<"2020-12-19") %>%
-                filter(Residential_City=="相模原市"))
+                filter(Residential_City=="相模原市"))%>%
+        mutate(note=NA)
       #藤沢市
       fujisawa<-read.csv("fujisawa.csv")%>%
-        select(-no,-No)
+        select(-no,-No)%>%
+        mutate(note=NA)
       
       #今日の神奈川県####
       HTML<-read_html("https://www.pref.kanagawa.jp/prs/list-2021-1-1.html")
@@ -1584,9 +1588,10 @@ repeat{
           rename("Residential_City"="居住地",
                  "Fixed_Date2"="陽性判明日",
                  "Sex"="性別",
-                 "Age"="年代")%>%
+                 "Age"="年代",
+                 "note"="発生届を受理した保健福祉事務所")%>%
           filter(!is.na(患者概要))%>%
-          select(Residential_City,Fixed_Date2,Sex,Age)%>%
+          select(Residential_City,Fixed_Date2,Sex,Age,note)%>%
           mutate(Fixed_Date=Sys.Date(),
                    #"2021-07-31",
                  PR_Date=Sys.Date(),
@@ -1599,11 +1604,10 @@ repeat{
       }
       #kanagawa_today2<-kanagawa_today
       kanagawa<-read.csv("kanagawa2.csv") %>%
-        select(-X,-note)%>%
+        select(-X)%>%
         mutate(PR_Date=as.Date(PR_Date))%>%
         mutate(Fixed_Date=as.Date(Fixed_Date),
-               Fixed_Date2=Fixed_Date,
-               Fixed_Date=PR_Date)%>%
+               Fixed_Date2=as.Date(Fixed_Date2))%>%
         mutate(Hos="神奈川県")%>%
         rbind(kanagawa_today)
       
@@ -1627,7 +1631,8 @@ repeat{
         #filter(!is.na(X))%>%
         mutate(Fixed_Date2=Fixed_Date,
                Fixed_Date=PR_Date)%>%
-        mutate(Hos="茅ヶ崎市")
+        mutate(Hos="茅ヶ崎市")%>%
+        mutate(note=NA)
       
       list1<-read.csv("list.csv")
       data3<-
@@ -1653,13 +1658,14 @@ repeat{
         rename("Residential_City"="list")%>%
         mutate(Fixed_Date2=Fixed_Date,
                Fixed_Date=PR_Date)%>%
-        mutate(Hos="川崎市")
+        mutate(Hos="川崎市")%>%
+        mutate(note=NA)
       
       data<-bind_rows(data2,data3,kanagawa2,kawasaki,chigasaki)%>%
         # select(Fixed_Date,Hospital_Pref,Residential_Pref,Residential_City,Age,
         #        Sex,X,Y,PR_Date,Fixed_Date2,Hos)%>%
         select(Fixed_Date,Hospital_Pref,Residential_City,Age,
-               Sex,X,Y,PR_Date,Fixed_Date2,Hos)%>%
+               Sex,X,Y,PR_Date,Fixed_Date2,Hos,note)%>%
         filter(Fixed_Date<Sys.Date())%>%
         # arrange(desc(Fixed_Date),Hospital_Pref,Residential_Pref,Residential_City)
         arrange(desc(Fixed_Date),Hospital_Pref,Residential_City)
@@ -1668,7 +1674,7 @@ repeat{
           # select(Fixed_Date,Hospital_Pref,Residential_Pref,Residential_City,Age,
           #        Sex,X,Y,PR_Date,Fixed_Date2,Hos)%>%
           select(Fixed_Date,Hospital_Pref,Residential_City,Age,
-                 Sex,X,Y,PR_Date,Fixed_Date2,Hos)%>%
+                 Sex,X,Y,PR_Date,Fixed_Date2,Hos,note)%>%
           #filter(Fixed_Date<Sys.Date())%>%
           # arrange(desc(Fixed_Date),Hospital_Pref,Residential_Pref,Residential_City)
           arrange(desc(Fixed_Date),Hospital_Pref,Residential_City)
