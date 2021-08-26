@@ -191,6 +191,14 @@ repeat{
                                    "居住地"),sep ="_") %>%
         filter(str_length(n)<=3,!is.na(判明日),str_detect(判明日,"月"),代=="代")
       
+      if(format(Sys.Date(),"%m")=="08"){
+        res5<-res5%>%
+          rbind(data.frame(chr=c(NA,NA),発表日=c("2021年8月18日","2021年8月2日"),n=c(NA,NA),
+                           年代=c("100 歳以上","100 歳以上"),代=c("代","代"),
+                           性別=c("男性","男性"),
+                              保健所=c("平塚","厚木"),居住地=c("平塚市","座間市"),
+                           判明日=c("8月16日","7月31日")))
+      }
       
       #前回使用したURLに一致しなかった場合に実行
       if(html_top2!=html_top[1,]){
@@ -741,6 +749,11 @@ repeat{
         arrange(desc(Date),desc(No))
       if(format(Sys.Date(),"%m")=="08"){
         TDS<-TDS%>%
+          mutate(City=ifelse(No>=54367&No<=55217,"横浜市",
+                             ifelse(No>=55218&No<=55252,"市外",City)))
+      }
+      if(format(Sys.Date(),"%m")=="08"){
+        TDS<-TDS%>%
           rbind(read.csv("yokohama0819covid-19.csv")%>%
                   rename("Age"="年代","Gender"="性別","City"="居住地")%>%
                   select(No,Age,Gender,City)%>%
@@ -761,6 +774,11 @@ repeat{
         filter(str_detect(.,"covid"))%>%
         #filter(str_detect(.,"[covid]"))%>%
         mutate(flag=str_detect(.,Date))#%>%
+      if(Date=="0823"){
+        yoko_html1[1,1]<-
+          "/city-info/koho-kocho/press/kenko/2021/0823coid-19.html"
+        yoko_html1[1,2]<-TRUE
+      }
       #filter(flag==T)
       if(yoko_html1[1,2]==TRUE){
         yoko_pdf<-
@@ -841,6 +859,10 @@ repeat{
             mutate(Hos="横浜")%>%
             filter(No!="No")%>%
             filter(No!="")
+        }
+        if(Date=="0825"){
+          yokohamatoday[1:850,6]<-"横浜市"
+          yokohamatoday[851:886,6]<-"市外"
         }
         write.csv( yokohamatoday,"yokohamatoday.csv",row.names = F)
       }else{
@@ -965,7 +987,7 @@ repeat{
         at<-attr(re,"match.length")
         TDS$Gender[n]=substring(tds,re,re+at-1)
         
-        re<-regexpr("[^ ]+[市区町村都] |[^ ]+[内外]) ",tds)
+        re<-regexpr("[^ ]+[市区町村都県] |[^ ]+[内外]) ",tds)
         at<-attr(re,"match.length")
         TDS$City[n]=substring(tds,re,re+at-2)
         
@@ -1063,7 +1085,7 @@ repeat{
           at<-attr(re,"match.length")
           TDS$Gender[n]=substring(tds,re,re+at-1)
           
-          re<-regexpr("[^ ]+[市区町村都] |[^ ]+[内外]) ",tds)
+          re<-regexpr("[^ ]+[市区町村都県] |[^ ]+[内外]) ",tds)
           at<-attr(re,"match.length")
           TDS$City[n]=substring(tds,re,re+at-2)
           
@@ -1127,7 +1149,7 @@ repeat{
             read.csv("sagamihara20210107.csv"),
             read.csv("sagamihara20210108.csv"),
             read.csv("sagamihara202102-06.csv"),
-            read.csv("sagamihara202107.csv"),
+            read.csv("sagamihara202107.csv")[,-1],
             read.csv("sagamihara202108.csv")
           )%>%
           rename("Sex"="Gender","PR_Date"="Date","Residential_City"="City")%>%
@@ -1443,6 +1465,11 @@ repeat{
         select(Fixed_Date,Hospital_Pref,Residential_City,Age,
                Sex,X,Y,PR_Date,Fixed_Date2,Hos,note)%>%
         filter(Fixed_Date<Sys.Date())%>%
+        mutate(Age=str_remove(Age,"代"),
+               Age=ifelse(str_detect(Age,"100"),"100-",Age),
+               Age=ifelse(str_detect(Age,"歳"),"0-10",Age),
+               Age=str_replace(Age,"－","-"),
+               Age=str_remove_all(Age," "))%>%
         # arrange(desc(Fixed_Date),Hospital_Pref,Residential_Pref,Residential_City)
         arrange(desc(Fixed_Date),Hospital_Pref,Residential_City)
       if(format(Sys.time(),"%H")%in%c("18","19","20","21")){
@@ -1451,6 +1478,10 @@ repeat{
           #        Sex,X,Y,PR_Date,Fixed_Date2,Hos)%>%
           select(Fixed_Date,Hospital_Pref,Residential_City,Age,
                  Sex,X,Y,PR_Date,Fixed_Date2,Hos,note)%>%
+          mutate(Age=str_remove(Age,"代"),
+                 Age=ifelse(str_detect(Age,"歳"),"0-10",Age),
+                 Age=str_replace(Age,"－","-"),
+                 Age=str_remove_all(Age," "))%>%
           #filter(Fixed_Date<Sys.Date())%>%
           # arrange(desc(Fixed_Date),Hospital_Pref,Residential_Pref,Residential_City)
           arrange(desc(Fixed_Date),Hospital_Pref,Residential_City)
