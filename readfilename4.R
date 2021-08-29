@@ -750,7 +750,13 @@ repeat{
       if(format(Sys.Date(),"%m")=="08"){
         TDS<-TDS%>%
           mutate(City=ifelse(No>=54367&No<=55217,"横浜市",
-                             ifelse(No>=55218&No<=55252,"市外",City)))
+                             ifelse(No>=55218&No<=55252,"市外",City)))%>%
+          mutate(City=ifelse(No>=55253&No<=56151,"横浜市",
+                             ifelse(No>=56152&No<=56188,"市外",City)))%>%
+          mutate(City=ifelse(No>=56189&No<=57322,"横浜市",
+                             ifelse(No>=57323&No<=57353,"市外",City)))%>%
+          mutate(City=ifelse(No>=57354&No<=58296,"横浜市",
+                             ifelse(No>=58297&No<=58326,"市外",City)))
       }
       if(format(Sys.Date(),"%m")=="08"){
         TDS<-TDS%>%
@@ -863,6 +869,22 @@ repeat{
         if(Date=="0825"){
           yokohamatoday[1:850,6]<-"横浜市"
           yokohamatoday[851:886,6]<-"市外"
+        }
+        if(Date=="0826"){
+          yokohamatoday[1:898,6]<-"横浜市"
+          yokohamatoday[898:936,6]<-"市外"
+        }
+        if(Date=="0827"){
+          yokohamatoday[1:1133,6]<-"横浜市"
+          yokohamatoday[1134:1165,6]<-"市外"
+        }
+        if(Date=="0828"){
+          yokohamatoday[1:942,6]<-"横浜市"
+          yokohamatoday[943:973,6]<-"市外"
+        }
+        if(Date=="0829"){
+          yokohamatoday[1:909,6]<-"横浜市"
+          yokohamatoday[910:928,6]<-"市外"
         }
         write.csv( yokohamatoday,"yokohamatoday.csv",row.names = F)
       }else{
@@ -1138,6 +1160,7 @@ repeat{
             read.csv("sagamihara202108.csv"),
             read.csv("sagamiharatoday.csv")
           )%>%
+          distinct(No,.keep_all = T)%>%
           rename("Sex"="Gender","PR_Date"="Date","Residential_City"="City")%>%
           mutate(Fixed_Date=PR_Date,
                  Fixed_Date2=NA)%>%
@@ -1152,6 +1175,7 @@ repeat{
             read.csv("sagamihara202107.csv")[,-1],
             read.csv("sagamihara202108.csv")
           )%>%
+          distinct(No,.keep_all = T)%>%
           rename("Sex"="Gender","PR_Date"="Date","Residential_City"="City")%>%
           mutate(Fixed_Date=PR_Date,
                  Fixed_Date2=NA)%>%
