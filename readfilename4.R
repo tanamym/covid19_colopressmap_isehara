@@ -358,6 +358,12 @@ repeat{
         mutate(番号=str_remove(番号,"例目"))%>%
         mutate(番号=as.numeric(番号))%>%
         filter(!is.na(番号))
+      if(format(Sys.Date(),"%m")=="09"){
+        kawa4<-
+          rbind(kawa4,data.frame(発表日="2021-9-4",番号=36717,番号2=" (394)",年代="20",性別="女性",
+                                    居住地="川崎市宮前区",確定日=NA,居住市区町村="川崎市",居住都道府県="神奈川県",
+                                    受診都道府県="神奈川県",備考="宮前区"))
+      }
       #write.csv(kawa4,"kawasaki202108.csv",row.names = F)
       kawasaki2<-
         kawa4%>%
@@ -642,6 +648,7 @@ repeat{
       TDS3 <-
         Table %>%
         select(No,患者確定日,年代,性別,職業等)%>%
+        mutate(No=ifelse(No=="6999",5999,No))%>%
         full_join(TDS2)%>%
         filter(!is.na(年代))
       #write.csv(TDS3,"yokosuka_202107.csv",row.names = F)
@@ -683,6 +690,7 @@ repeat{
         filter(grepl("yokohama.pdf$",pdf))
       #Yokohama[nrow(Yokohama)+1,] <-"/documents/77029/20210730_yokohma.pdf"
       TD <- data.frame()
+      TD2 <- data.frame()
       for (p in Yokohama$pdf) {
         path2<-paste0("https://www.pref.kanagawa.jp",p)
         if(p=="/documents/77029/20210702_yokohama.pdf"){
@@ -696,6 +704,19 @@ repeat{
         re<-regexpr("令和.+日\n",pdf[[1]])
         at<-attr(re,"match.length")
         d=stri_trans_nfkc(substring(pdf[[1]],re,re+at-2))
+        td<-
+          pdf[[1]] %>%
+          strsplit("\n") %>%
+          data.frame() %>%
+          mutate(Date=d) %>%
+          mutate(Date=gsub("令和3年","2021年",Date)) %>%
+          mutate(Date=gsub("令和2年","2020年",Date)) %>%
+          mutate(Date=gsub("日.+","日",Date))
+        colnames(td)[1] <- "Text"
+        TD2 <-
+          TD2%>%
+          rbind(td)
+          
         for (l in 2:length(pdf)) {
           td <-
             pdf[[l]] %>%
@@ -720,7 +741,39 @@ repeat{
         TD %>%
         # mutate(Text2=gsub(" ","",Text)) %>%
         mutate(Text2=stri_trans_nfkc(Text))
-      
+      TD2 <-
+        TD2 %>%
+        # mutate(Text2=gsub(" ","",Text)) %>%
+        mutate(Text2=stri_trans_nfkc(Text))
+      sr2=which(grepl("市外.県内",TD2$Text2))
+      TDS2<-
+        data.frame()
+      for (n in 1:length(sr2)) {
+        # tds <- paste0(TD2$Text2[sr2[n]])%>%
+        # tidyr::separate(paste0(TD2$Text2[sr2[n]]),into =c("横浜市","市外(県内)","市外(県外)","市外(都内)","計"),sep ="_")
+        tds2 <- paste0(TD2$Text2[sr2[n]+1])%>%
+          data.frame()%>%
+          mutate(Date="")
+        colnames(tds2)[1]<-"chr"
+        TDS2<-
+          rbind(TDS2,tds2)
+        TDS2$Date[n]=TD2$Date[sr2[n]]
+      }
+      TDS3<-
+        TDS2%>%
+        mutate(chr=str_replace_all(chr," +","_"),
+               chr=str_remove(chr,"^_"))%>%
+        tidyr::separate(chr,into =c("横浜市","市外(県内)","市外(県外)","市外(都内)","計"),sep ="_")%>%
+        tidyr::pivot_longer(cols=-Date,names_to="City",
+                            values_to = "count")%>%
+        filter(City!="計")
+      #write.csv(TDS3,"yoko_covid2108.csv",row.names = F)
+      write.csv(TDS3,"yoko_covid2109.csv",row.names = F)
+      yoko_covid<-
+        rbind(read.csv("yoko_covid2108.csv"),
+            read.csv("yoko_covid2109.csv"))%>%
+        mutate(Date=as.Date(Date,format="%Y年%m月%d日"))
+      write.csv(yoko_covid,"yoko_covid.csv",row.names = F,fileEncoding="UTF-8")
       sr=which(grepl("男|女",TD$Text2))
       n=1
       TDS <- data.frame(Date="",No=1:length(sr),Age="",Gender="",Hos="",City="")
@@ -737,7 +790,7 @@ repeat{
         at<-attr(re,"match.length")
         TDS$Age[n]=substring(tds,re,re+at-1)
         
-        re<-regexpr("男性|女性|男児|女児",tds)
+        re<-regexpr("男|女",tds)
         at<-attr(re,"match.length")
         TDS$Gender[n]=substring(tds,re,re+at-1)
         
@@ -757,12 +810,22 @@ repeat{
         mutate(Date=as.Date(Date,format="%Y年%m月%d日")) %>%
         mutate(Hos="横浜") %>%
         arrange(desc(Date),desc(No))
-      if(format(Sys.Date(),"%m")=="09"){
-        TDS<-TDS%>%
-          mutate(City=ifelse(No>=60692&No<=61370,"横浜市",
-                             ifelse(No>=61371&No<=61397,"市外",City)))
-          
-      }
+      # if(format(Sys.Date(),"%m")=="09"){
+      #   TDS<-TDS%>%
+      #     mutate(City=ifelse(No>=60692&No<=61370,"横浜市",
+      #                        ifelse(No>=61371&No<=61397,"市外",City)))%>%
+      #     mutate(City=ifelse(No>=61398&No<=62001,"横浜市",
+      #                        ifelse(No>=62002&No<=62029,"市外",City)))%>%
+      #     mutate(City=ifelse(No>=62030&No<=62853,"横浜市",
+      #                        ifelse(No>=62854&No<=62874,"市外",City)))%>%
+      #     mutate(City=ifelse(No>=62875&No<=63600,"横浜市",
+      #                        ifelse(No>=63601&No<=63617,"市外",City)))%>%
+      #     mutate(City=ifelse(No>=63618&No<=64187,"横浜市",
+      #                        ifelse(No>=64188&No<=64207,"市外",City)))%>%
+      #     mutate(City=ifelse(No>=64208&No<=64680,"横浜市",
+      #                        ifelse(No>=64681&No<=64693,"市外",City)))
+      # 
+      # }
       if(format(Sys.Date(),"%m")=="08"){
         TDS<-TDS%>%
           rbind(read.csv("yokohama0819covid-19.csv")%>%
@@ -803,11 +866,23 @@ repeat{
           mutate(pdf=paste0("https://www.city.yokohama.lg.jp/city-info/koho-kocho/press/kenko/2021/",.))
         
         TD <- data.frame()
+        TD2 <- data.frame()
         pdf<-pdf_text(yoko_pdf[1,2])
         if(pdf[1]=="")print(paste("ファイル名:",yoko_pdf[1,2],"を取得出来ません"))
         re<-regexpr("令和.+日\n",pdf[[1]])
         at<-attr(re,"match.length")
         d=stri_trans_nfkc(substring(pdf[[1]],re,re+at-2))
+        
+        TD2<-
+          pdf[[1]] %>%
+          strsplit("\n") %>%
+          data.frame() %>%
+          mutate(Date=d) %>%
+          mutate(Date=gsub("令和3年","2021年",Date)) %>%
+          mutate(Date=gsub("令和2年","2020年",Date)) %>%
+          mutate(Date=gsub("日.+","日",Date))
+        colnames(TD2)[1] <- "Text"
+
         for (l in 2:length(pdf)) {
           td <-
             pdf[[l]] %>%
@@ -830,6 +905,39 @@ repeat{
           TD %>%
           # mutate(Text2=gsub(" ","",Text)) %>%
           mutate(Text2=stri_trans_nfkc(Text))
+        TD2 <-
+          TD2 %>%
+          # mutate(Text2=gsub(" ","",Text)) %>%
+          mutate(Text2=stri_trans_nfkc(Text))
+        sr2=which(grepl("市外.県内",TD2$Text2))
+        TDS2<-
+          data.frame()
+        for (n in 1:length(sr2)) {
+          # tds <- paste0(TD2$Text2[sr2[n]])%>%
+          # tidyr::separate(paste0(TD2$Text2[sr2[n]]),into =c("横浜市","市外(県内)","市外(県外)","市外(都内)","計"),sep ="_")
+          tds2 <- paste0(TD2$Text2[sr2[n]+1])%>%
+            data.frame()%>%
+            mutate(Date="")
+          colnames(tds2)[1]<-"chr"
+          TDS2<-
+            rbind(TDS2,tds2)
+          TDS2$Date[n]=TD2$Date[sr2[n]]
+        }
+        TDS3<-
+          TDS2%>%
+          mutate(chr=str_replace_all(chr," +","_"),
+                 chr=str_remove(chr,"^_"))%>%
+          tidyr::separate(chr,into =c("横浜市","市外(県内)","市外(県外)","市外(都内)","計"),sep ="_")%>%
+          tidyr::pivot_longer(cols=-Date,names_to="City",
+                              values_to = "count")%>%
+          filter(City!="計")
+        write.csv(TDS3,"yoko_covid_today.csv",row.names = F)
+        yoko_covid<-
+          rbind(read.csv("yoko_covid2108.csv"),
+                read.csv("yoko_covid2109.csv"),
+                read.csv("yoko_covid_today.csv"))%>%
+          mutate(Date=as.Date(Date,format="%Y年%m月%d日"))
+        write.csv(yoko_covid,"yoko_covid.csv",row.names = F,fileEncoding="UTF-8")
         sr=which(grepl("男|女",TD$Text2))
         n=1
         TDS <- data.frame(Date="",No=1:length(sr),Age="",Gender="",Hos="",City="")
@@ -846,7 +954,7 @@ repeat{
           at<-attr(re,"match.length")
           TDS$Age[n]=substring(tds,re,re+at-1)
           
-          re<-regexpr("男性|女性|男児|女児",tds)
+          re<-regexpr("男|女",tds)
           at<-attr(re,"match.length")
           TDS$Gender[n]=substring(tds,re,re+at-1)
           
@@ -872,42 +980,62 @@ repeat{
             filter(No!="No")%>%
             filter(No!="")
         }
-        if(Date=="0825"){
-          yokohamatoday[1:850,6]<-"横浜市"
-          yokohamatoday[851:886,6]<-"市外"
-        }
-        if(Date=="0826"){
-          yokohamatoday[1:898,6]<-"横浜市"
-          yokohamatoday[898:936,6]<-"市外"
-        }
-        if(Date=="0827"){
-          yokohamatoday[1:1133,6]<-"横浜市"
-          yokohamatoday[1134:1165,6]<-"市外"
-        }
-        if(Date=="0828"){
-          yokohamatoday[1:942,6]<-"横浜市"
-          yokohamatoday[943:973,6]<-"市外"
-        }
-        if(Date=="0829"){
-          yokohamatoday[1:909,6]<-"横浜市"
-          yokohamatoday[910:928,6]<-"市外"
-        }
-        if(Date=="0830"){
-          yokohamatoday[1:838,6]<-"横浜市"
-          yokohamatoday[839:878,6]<-"市外"
-        }
-        if(Date=="0831"){
-          yokohamatoday[1:541,6]<-"横浜市"
-          yokohamatoday[542:559,6]<-"市外"
-        }
-        if(Date=="0901"){
-          yokohamatoday[1:678,6]<-"横浜市"
-          yokohamatoday[679:706,6]<-"市外"
-        }
-        if(Date=="0902"){
-          yokohamatoday[1:603,6]<-"横浜市"
-          yokohamatoday[604:632,6]<-"市外"
-        }
+        # if(Date=="0825"){
+        #   yokohamatoday[1:850,6]<-"横浜市"
+        #   yokohamatoday[851:886,6]<-"市外"
+        # }
+        # if(Date=="0826"){
+        #   yokohamatoday[1:898,6]<-"横浜市"
+        #   yokohamatoday[898:936,6]<-"市外"
+        # }
+        # if(Date=="0827"){
+        #   yokohamatoday[1:1133,6]<-"横浜市"
+        #   yokohamatoday[1134:1165,6]<-"市外"
+        # }
+        # if(Date=="0828"){
+        #   yokohamatoday[1:942,6]<-"横浜市"
+        #   yokohamatoday[943:973,6]<-"市外"
+        # }
+        # if(Date=="0829"){
+        #   yokohamatoday[1:909,6]<-"横浜市"
+        #   yokohamatoday[910:928,6]<-"市外"
+        # }
+        # if(Date=="0830"){
+        #   yokohamatoday[1:838,6]<-"横浜市"
+        #   yokohamatoday[839:878,6]<-"市外"
+        # }
+        # if(Date=="0831"){
+        #   yokohamatoday[1:541,6]<-"横浜市"
+        #   yokohamatoday[542:559,6]<-"市外"
+        # }
+        # if(Date=="0901"){
+        #   yokohamatoday[1:678,6]<-"横浜市"
+        #   yokohamatoday[679:706,6]<-"市外"
+        # }
+        # if(Date=="0902"){
+        #   yokohamatoday[1:603,6]<-"横浜市"
+        #   yokohamatoday[604:632,6]<-"市外"
+        # }
+        # if(Date=="0903"){
+        #   yokohamatoday[1:823,6]<-"横浜市"
+        #   yokohamatoday[824:845,6]<-"市外"
+        # }
+        # if(Date=="0904"){
+        #   yokohamatoday[1:725,6]<-"横浜市"
+        #   yokohamatoday[726:743,6]<-"市外"
+        # }
+        # if(Date=="0905"){
+        #   yokohamatoday[1:569,6]<-"横浜市"
+        #   yokohamatoday[570:590,6]<-"市外"
+        # }
+        # if(Date=="0906"){
+        #   yokohamatoday[1:472,6]<-"横浜市"
+        #   yokohamatoday[473:486,6]<-"市外"
+        # }
+        # if(Date=="0907"){
+        #   yokohamatoday[1:219,6]<-"横浜市"
+        #   yokohamatoday[220:233,6]<-"市外"
+        # }
         write.csv( yokohamatoday,"yokohamatoday.csv",row.names = F)
       }else{
         #yokohamatoday<-data.frame()
@@ -1530,6 +1658,10 @@ repeat{
                Age=str_remove_all(Age," "))%>%
         # arrange(desc(Fixed_Date),Hospital_Pref,Residential_Pref,Residential_City)
         arrange(desc(Fixed_Date),Hospital_Pref,Residential_City)
+      data2021<-
+        data%>%
+        filter(Fixed_Date>as.Date("2021-06-30"))
+        
       if(format(Sys.time(),"%H")%in%c("18","19","20","21")){
         data<-bind_rows(data2,data3,kanagawa2,kawasaki,chigasaki)%>%
           # select(Fixed_Date,Hospital_Pref,Residential_Pref,Residential_City,Age,
@@ -1543,9 +1675,22 @@ repeat{
           #filter(Fixed_Date<Sys.Date())%>%
           # arrange(desc(Fixed_Date),Hospital_Pref,Residential_Pref,Residential_City)
           arrange(desc(Fixed_Date),Hospital_Pref,Residential_City)
+        data2021<-
+          data%>%
+          filter(Fixed_Date>as.Date("2021-06-30"))
       }
-      write.csv(data,"coviddata.csv",row.names=F,fileEncoding="UTF-8")
+      #write.csv(data,"coviddata.csv",row.names=F,fileEncoding="UTF-8")
+      write.csv(data2021,"data2021.csv",row.names=F,fileEncoding="UTF-8")
       print("coviddata.csvを出力しました")
+      # data202106<-
+      #   data%>%
+      #   filter(Fixed_Date<=as.Date("2021-06-30"))%>%
+      #   filter(Fixed_Date>as.Date("2020-12-31"))
+      # write.csv(data202106,"data202106.csv",row.names=F,fileEncoding="UTF-8")
+      # data2020<-
+      #   data%>%
+      #   filter(Fixed_Date<=as.Date("2020-12-31"))
+      # write.csv(data2020,"data2020.csv",row.names=F,fileEncoding="UTF-8")
     }
     
     
