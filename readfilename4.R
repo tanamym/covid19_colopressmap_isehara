@@ -173,6 +173,7 @@ repeat{
         filter(str_length(chr)>10) %>%
         mutate(s = str_replace(chr,"^ +","")) %>%
         #mutate(s = ifelse(str_detect(s,"―"), str_replace(s,"      "," 0-10 代 "),s)) %>%
+        mutate(s=str_replace_all(s,"代未満","歳未満")) %>%
         mutate(s = ifelse(str_detect(s,"10 歳未満"), str_replace(s,"10 歳未満","0-10 代"),s)) %>%
         #mutate(判明日 = str_replace_all(s," ","")) %>%
         mutate(判明日 = str_replace_all(s," 日.+","日")) %>%
@@ -183,7 +184,7 @@ repeat{
                             str_replace(判明日,"^.+?11月","11月"),
                             ifelse(str_detect(判明日,"12月"),
                                    str_replace(判明日,"^.+?12月","12月"),
-                                   str_sub(判明日,start = -5,end = -1))))%>%
+                                   str_sub(判明日,start = -6,end = -1))))%>%
         mutate(s = str_replace_all(s," +","_")) %>%
         mutate(s = ifelse(str_detect(s,"市"),
                           str_replace(s,"市.+","市"),
@@ -207,7 +208,7 @@ repeat{
           rbind(kanagawa5,kanagawa3)
         kana_hozon<-kanagawa3
         write.csv(kana_hozon,"kanagawa_202109.csv")
-        
+        #kanagawa3<-read.csv("kanagawa_202109.csv")[,-1]
         print("上書きしました")
       }
       # kanagawa3<-kanagawa3%>%
@@ -513,7 +514,7 @@ repeat{
           rbind(chigasaki2,chigasaki3)
         chi_hozon<-chigasaki3
         write.csv(chi_hozon,"chigasaki_202109.csv")
-        
+        #chigasaki3<-read.csv("chigasaki_202109.csv")[,-1]
         print("上書きしました")
       }  
       
