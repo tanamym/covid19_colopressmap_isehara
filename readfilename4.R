@@ -88,13 +88,18 @@ repeat{
           filter(str_detect(.,"令和"))%>%
           str_replace_all(.,"\n","")%>%
           str_replace_all(.,"年.+","年")%>%
-          str_replace_all(" ","")
+          str_replace_all(" ","")%>%
+          str_replace_all(.,".+?令和","令和")
+        print(year)
         ####
         if(str_detect(year,"令和")){
           flag[hn,3]<-year
           NEXT<-F
         }
         t=t+1
+      }
+      if(flag[1,2]=="10月18日"){
+        flag[1,3]<-"令和3年"
       }
       flag<-
         flag%>%
@@ -104,6 +109,7 @@ repeat{
                                      ifelse(V3=="令和4年",2022,NA))))
       
       print(hn)
+     
       #年月が一致しなければ飛ばす
       if((month(Sys.Date()-1)!=as.numeric(flag[hn,1]))|(year(Sys.Date())!=flag[hn,4])){
         next
@@ -1364,7 +1370,7 @@ repeat{
             read.csv("sagamihara202107.csv")[,-1],
             read.csv("sagamihara202108.csv"),
             read.csv("sagamihara202109.csv"),
-            read.csv("sagamihara202110.csv"),
+            read.csv("sagamihara202110.csv")
           )%>%
           distinct(No,.keep_all = T)%>%
           rename("Sex"="Gender","PR_Date"="Date","Residential_City"="City")%>%
@@ -1592,7 +1598,7 @@ repeat{
       Date<-str_remove(Date,"2021-")%>%
         str_remove_all("0")%>%
         str_replace("-","月")
-      Date<-paste0("10月",format(Sys.Date(),"%d")%>%str_remove_all("0"))
+      #Date<-paste0("11月",format(Sys.Date(),"%d")%>%str_remove_all("0"))
       HTML2<-cbind(TEXT,URL)%>%
         data.frame()%>%
         filter(str_detect(TEXT,"新型コロナウイルス感染症による患者確認について"))%>%
@@ -1606,7 +1612,10 @@ repeat{
           data.frame()%>%
           filter(str_detect(.,".csv"))%>%
           rename("csv"=".")
-        kanagawa_today<-
+        
+        kanagawa_today<-data.frame()
+        if(!is.na(CSV[1,1])){
+           kanagawa_today<-
           read.csv(paste0("https://www.pref.kanagawa.jp",CSV[1,1]))%>%
           rename("Residential_City"="居住地",
                  "Fixed_Date2"="陽性判明日",
@@ -1624,6 +1633,8 @@ repeat{
                  hos="kanagawa")%>%
           mutate(Fixed_Date2=str_remove(Fixed_Date2,"日"),
                  Fixed_Date2=paste0("2021-",str_replace(Fixed_Date2,"月","-")))
+        }
+       
       }else{
         kanagawa_today<-data.frame()
       }
