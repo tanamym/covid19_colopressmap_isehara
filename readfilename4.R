@@ -212,8 +212,10 @@ repeat{
       if(html_top2!=html_top[1,]){
         kanagawa3<-
           rbind(kanagawa5,kanagawa3)
+        # kanagawa3<-kanagawa3%>%
+        #   filter(Fixed_Date<"2021-11-01")
         kana_hozon<-kanagawa3
-        write.csv(kana_hozon,"kanagawa_202109.csv")
+        write.csv(kana_hozon,"kanagawa_202110.csv")
         #kanagawa3<-read.csv("kanagawa_202109.csv")[,-1]
         print("上書きしました")
       }
@@ -272,7 +274,7 @@ repeat{
       
       html_top3<- 
         html_top3%>%
-        filter(str_detect(html,"2110"))
+        filter(str_detect(html,"2111"))
         #filter(str_detect(html,"2109"))
       
       k1=1
@@ -375,11 +377,13 @@ repeat{
       }
       #write.csv(kawa4,"kawasaki202108.csv",row.names = F)
       #write.csv(kawa4,"kawasaki202109.csv",row.names = F)
+      #write.csv(kawa4,"kawasaki202110.csv",row.names = F)
       kawasaki2<-
         kawa4%>%
         rbind(read.csv("kawasaki202107.csv"),
               read.csv("kawasaki202108.csv"),
-              read.csv("kawasaki202109.csv"))%>%
+              read.csv("kawasaki202109.csv"),
+              read.csv("kawasaki202110.csv"))%>%
         rename("list"="居住地","Fixed_Date2"="確定日",
                "Residential_City"="居住市区町村",
                "Residential_Pref"="居住都道府県",
@@ -419,13 +423,70 @@ repeat{
         rename("html"=".")%>%
         mutate(html=str_remove(html,"../../../"))%>%
         mutate(html=paste0("https://www.city.chigasaki.kanagawa.jp/",html))
-      
-      
+      chigasaki2<-data.frame()
+      D<-Sys.Date()%>%
+        str_remove_all("-")%>%
+        str_remove_all("2021")
+      if(str_detect(rhtml4[1,1],D)&nrow(chi_pref)==0){
+        path2<-rhtml4[1,1]
+        chi2<-pdf_text(path2)
+        date_chi2<-
+          chi2[1]%>%
+          strsplit("\n")%>%
+          data.frame() %>%
+          data.table::setnames("chr")%>%
+          filter(str_detect(chr,"日")&str_detect(chr,"年"))%>%
+          mutate(pdate=str_replace_all(chr,"日.+","日"))%>%
+          mutate(pdate=str_replace_all(pdate," ",""))%>%
+          mutate(pdate=stri_trans_nfkc(pdate))%>%
+          # mutate(pdate=ifelse(str_detect(pdate,"令和3年"),str_replace(pdate,"令和3年","2021年"),
+          #                     ifelse(str_detect(pdate,"令和2年"),str_replace(pdate,"令和2年","2020年"),
+          #                            pdate)))%>%
+          mutate(pdate=str_replace_all(pdate,"日",""),
+                 pdate=str_replace_all(pdate,"月","-"),
+                 pdate=str_replace_all(pdate,"年","-"))
+        
+        for (i in 1:length(chi2)) {
+          chi3<-chi2[[i]]%>%
+            str_split("\n")%>%
+            data.frame() %>%
+            mutate(発表日=date_chi2[1,2])
+          colnames(chi3)[1]<-"chr"
+          chi4<-
+            rbind(chi4,chi3)
+        }
+        chi5<-
+          chi4%>%
+          filter(str_detect(chr,"例目")) %>%
+          filter(str_detect(chr,"市|町|県内|県外")) %>%
+          mutate(chr=str_replace(chr,"^ +",""),
+                 chr=str_replace_all(chr," +","_"),
+                 chr=str_replace(chr,"代",""))%>%
+          tidyr::separate(chr,into = c("X1","例目","年代","性別","居住地",
+                                       "X6","X7","X8","陽性確定日","X10"),sep ="_")%>%
+          dplyr::select(例目,年代,性別,居住地,陽性確定日,発表日)%>%
+          filter(!is.na(例目))%>%
+          mutate(年代=stringi::stri_trans_nfkc(年代))
+        chigasaki2<-
+          chi5%>%
+          mutate(陽性確定日 = ifelse(str_detect(陽性確定日,"12月"),
+                                paste0("2020-",str_replace(陽性確定日,"月","-")),
+                                paste0("2021-",str_replace(陽性確定日,"月","-"))
+          ) )%>%
+          mutate(陽性確定日 = str_replace(陽性確定日,"日",""))%>%
+          select(年代,性別,居住地,陽性確定日,発表日)%>%
+          #select(-年代,-性別) %>%
+          rename("Fixed_Date2"="陽性確定日","Residential_City"="居住地",
+                 "Age"="年代","Sex"="性別","PR_Date"="発表日")%>%
+          mutate(Fixed_Date=PR_Date)%>%
+          filter(!str_detect(Fixed_Date,"NULL"))
+      }
       #chigasaki####
       chi_pref<-
         pdf_pref%>%
         filter(str_detect(pref,"茅ヶ崎"))
-      k1=1
+      if(nrow(chi_pref)!=0){
+        k1=1
       k2=nrow(chi_pref)
       for (k in k1:k2) {#1月
         if(k==k1){
@@ -456,9 +517,7 @@ repeat{
           mutate(pdate=str_replace_all(pdate,"日",""),
                  pdate=str_replace_all(pdate,"月","-"),
                  pdate=str_replace_all(pdate,"年","-"))
-        D<-Sys.Date()%>%
-          str_remove_all("-")%>%
-          str_remove_all("2021")
+
         
         if(k==1&date_chi[1,2]<Sys.Date()&str_detect(rhtml4[1,1],D)){
           path2<-rhtml4[1,1]
@@ -513,17 +572,6 @@ repeat{
         dplyr::select(例目,年代,性別,居住地,陽性確定日,発表日)%>%
         filter(!is.na(例目))%>%
         mutate(年代=stringi::stri_trans_nfkc(年代))
-      
-      #前回使用したURLに一致しなかった場合に実行
-      if(html_top2!=html_top[1,]){
-        chigasaki3<-
-          rbind(chigasaki2,chigasaki3)
-        chi_hozon<-chigasaki3
-        write.csv(chi_hozon,"chigasaki_202109.csv")
-        #chigasaki3<-read.csv("chigasaki_202109.csv")[,-1]
-        print("上書きしました")
-      }  
-      
       chigasaki2<-
         chi5%>%
         mutate(陽性確定日 = ifelse(str_detect(陽性確定日,"12月"),
@@ -537,6 +585,20 @@ repeat{
                "Age"="年代","Sex"="性別","PR_Date"="発表日")%>%
         mutate(Fixed_Date=PR_Date)%>%
         filter(!str_detect(Fixed_Date,"NULL"))
+      }
+      
+      
+      #前回使用したURLに一致しなかった場合に実行
+      if(html_top2!=html_top[1,]){
+        chigasaki3<-
+          rbind(chigasaki2,chigasaki3)
+        chi_hozon<-chigasaki3
+        write.csv(chi_hozon,"chigasaki_202110.csv")
+        #chigasaki3<-read.csv("chigasaki_202109.csv")[,-1]
+        print("上書きしました")
+      }  
+      
+      
       chigasaki1<-
         read.csv("chigasaki202012.csv")
       
@@ -556,8 +618,10 @@ repeat{
         html_attr("href") %>%
         data.frame() %>%
         rename(html=".") %>%
-        filter(grepl("nagekomi/202110",html))
-      Table <-
+        filter(grepl("nagekomi/202111",html))
+   
+      if(nrow(Ahref)!=0){
+        Table <-
         HTML %>%
         # html_nodes("table") %>%
         html_table() %>%
@@ -664,10 +728,11 @@ repeat{
         mutate(No=ifelse(No=="6263"&患者確定日=="9月11日",6163,No))%>%
         full_join(TDS2)%>%
         filter(!is.na(年代))
-      #write.csv(TDS3,"yokosuka_202107.csv",row.names = F)
+       #write.csv(TDS3,"yokosuka_202107.csv",row.names = F)
       #write.csv(TDS3,"yokosuka_202108.csv",row.names = F)
       #write.csv(TDS3,"yokosuka_202109.csv",row.names = F)
-      write.csv(TDS3,"yokosuka_202110.csv",row.names = F)
+      #write.csv(TDS3,"yokosuka_202110.csv",row.names = F)
+      write.csv(TDS3,"yokosuka_202111.csv",row.names = F)
       yokosuka<-rbind(
         read.csv("yokosuka_202106.csv"),
         read.csv("yokosuka_202105.csv"),
@@ -675,7 +740,8 @@ repeat{
         read.csv("yokosuka_202108.csv"),
         read.csv("yokosuka_20210815.csv"),
         read.csv("yokosuka_202109.csv"),
-        read.csv("yokosuka_202110.csv")
+        read.csv("yokosuka_202110.csv"),
+        read.csv("yokosuka_202111.csv")
       )%>%
         filter(!is.na(No))%>%
         rename("PR_Date"="Date","Fixed_Date2"="患者確定日")%>%
@@ -684,6 +750,26 @@ repeat{
         mutate(Fixed_Date2=str_remove(Fixed_Date2,"日"),
                Fixed_Date2=as.Date(Fixed_Date2))%>%
         arrange(desc(Fixed_Date))
+      }
+
+      if(nrow(Ahref)==0){
+        yokosuka<-rbind(
+          read.csv("yokosuka_202106.csv"),
+          read.csv("yokosuka_202105.csv"),
+          read.csv("yokosuka_202107.csv"),
+          read.csv("yokosuka_202108.csv"),
+          read.csv("yokosuka_20210815.csv"),
+          read.csv("yokosuka_202109.csv"),
+          read.csv("yokosuka_202110.csv")
+        )%>%
+          filter(!is.na(No))%>%
+          rename("PR_Date"="Date","Fixed_Date2"="患者確定日")%>%
+          mutate(Fixed_Date=PR_Date)%>%
+          mutate(Fixed_Date2=paste("2021-",str_replace(Fixed_Date2,"月","-")))%>%
+          mutate(Fixed_Date2=str_remove(Fixed_Date2,"日"),
+                 Fixed_Date2=as.Date(Fixed_Date2))%>%
+          arrange(desc(Fixed_Date))
+      }
       
       write.csv(yokosuka,"yokosuka.csv")
       print("横須賀市を出力しました。")
@@ -790,11 +876,13 @@ repeat{
       }
       #write.csv(TDS3,"yoko_covid2108.csv",row.names = F)
       #write.csv(TDS3,"yoko_covid2109.csv",row.names = F)
-      write.csv(TDS3,"yoko_covid2110.csv",row.names = F)
+      #write.csv(TDS3,"yoko_covid2110.csv",row.names = F)
+      write.csv(TDS3,"yoko_covid2111.csv",row.names = F)
       yoko_covid<-
         rbind(read.csv("yoko_covid2108.csv"),
             read.csv("yoko_covid2109.csv"),
-            read.csv("yoko_covid2110.csv")
+            read.csv("yoko_covid2110.csv"),
+            read.csv("yoko_covid2111.csv")
             )%>%
         mutate(Date=as.Date(Date,format="%Y年%m月%d日"))%>%
         mutate(hos="yokohama")
@@ -864,7 +952,8 @@ repeat{
       }
       #write.csv(TDS,"yokohama202108.csv",row.names = F)
       #write.csv(TDS,"yokohama202109.csv",row.names = F)
-      write.csv(TDS,"yokohama202110.csv",row.names = F)
+      #write.csv(TDS,"yokohama202110.csv",row.names = F)
+      write.csv(TDS,"yokohama202111.csv",row.names = F)
       #横浜市today####
       Date<-format(Sys.Date(),"%m%d")
       yoko_html1<-
@@ -965,6 +1054,7 @@ repeat{
           rbind(read.csv("yoko_covid2108.csv"),
                 read.csv("yoko_covid2109.csv"),
                 read.csv("yoko_covid2110.csv"),
+                read.csv("yoko_covid2111.csv"),
                 read.csv("yoko_covid_today.csv"))%>%
           mutate(Date=as.Date(Date,format="%Y年%m月%d日"))
         write.csv(yoko_covid,"yoko_covid.csv",row.names = F,fileEncoding="UTF-8")
@@ -1080,6 +1170,7 @@ repeat{
       if(yoko_html1[1,2]==TRUE){
         yokohama<-
           rbind(
+            read.csv("yokohama202111.csv"),
             read.csv("yokohama202110.csv"),
             read.csv("yokohama202109.csv"),
             read.csv("yokohama202108.csv"),
@@ -1096,6 +1187,7 @@ repeat{
       }else{
         yokohama<-
           rbind(
+            read.csv("yokohama202111.csv"),
             read.csv("yokohama202110.csv"),
             read.csv("yokohama202109.csv"),
             read.csv("yokohama202108.csv"),
@@ -1128,7 +1220,8 @@ repeat{
         #Ahref %>%
         pdf_pref%>%
         filter(grepl("sagamihara",pdf))
-      for (p in Sagamihara$pdf) {
+      if(nrow(Sagamihara)!=0){
+        for (p in Sagamihara$pdf) {
         
         path2<-paste0("https://www.pref.kanagawa.jp",p)
         if(path2=="https://www.pref.kanagawa.jp/documents/71309/20210204_sagamihara.pdf"){
@@ -1221,7 +1314,10 @@ repeat{
       }
       #write.csv(TDS2,"sagamihara202108.csv",row.names = F)
       #write.csv(TDS2,"sagamihara202109.csv",row.names = F)
-      write.csv(TDS2,"sagamihara202110.csv",row.names = F)
+      #write.csv(TDS2,"sagamihara202110.csv",row.names = F)
+      write.csv(TDS2,"sagamihara202111.csv",row.names = F)
+      }
+      
       #sagamihara_today####
       Date<-format(Sys.Date(),"%m%d")
       saga_html<-read_html("https://www.city.sagamihara.kanagawa.jp/shisei/koho/1019191.html")%>%
@@ -1342,7 +1438,8 @@ repeat{
       #     read.csv("sagamiharatoday.csv")
       #   )
       # write.csv(sagamihara,"sagamihara202107.csv")
-      if(saga_html[1,2]==TRUE){
+      if(nrow(Sagamihara)!=0){
+        if(saga_html[1,2]==TRUE){
         sagamihara<-
           rbind(
             read.csv("sagamihara20201219.csv"),
@@ -1353,6 +1450,7 @@ repeat{
             read.csv("sagamihara202108.csv"),
             read.csv("sagamihara202109.csv"),
             read.csv("sagamihara202110.csv"),
+            read.csv("sagamihara202111.csv"),
             read.csv("sagamiharatoday.csv")
           )%>%
           distinct(No,.keep_all = T)%>%
@@ -1370,13 +1468,55 @@ repeat{
             read.csv("sagamihara202107.csv")[,-1],
             read.csv("sagamihara202108.csv"),
             read.csv("sagamihara202109.csv"),
-            read.csv("sagamihara202110.csv")
+            read.csv("sagamihara202110.csv"),
+            read.csv("sagamihara202111.csv")
           )%>%
           distinct(No,.keep_all = T)%>%
           rename("Sex"="Gender","PR_Date"="Date","Residential_City"="City")%>%
           mutate(Fixed_Date=PR_Date,
                  Fixed_Date2=NA)%>%
           arrange(desc(Fixed_Date))
+      }
+        
+      }
+      
+      if(nrow(Sagamihara)==0){
+        if(saga_html[1,2]==TRUE){
+          sagamihara<-
+            rbind(
+              read.csv("sagamihara20201219.csv"),
+              read.csv("sagamihara20210107.csv"),
+              read.csv("sagamihara20210108.csv"),
+              read.csv("sagamihara202102-06.csv"),
+              read.csv("sagamihara202107.csv")[,-1],
+              read.csv("sagamihara202108.csv"),
+              read.csv("sagamihara202109.csv"),
+              read.csv("sagamihara202110.csv"),
+              read.csv("sagamiharatoday.csv")
+            )%>%
+            distinct(No,.keep_all = T)%>%
+            rename("Sex"="Gender","PR_Date"="Date","Residential_City"="City")%>%
+            mutate(Fixed_Date=PR_Date,
+                   Fixed_Date2=NA)%>%
+            arrange(desc(Fixed_Date))
+        }else{
+          sagamihara<-
+            rbind(
+              read.csv("sagamihara20201219.csv"),
+              read.csv("sagamihara20210107.csv"),
+              read.csv("sagamihara20210108.csv"),
+              read.csv("sagamihara202102-06.csv"),
+              read.csv("sagamihara202107.csv")[,-1],
+              read.csv("sagamihara202108.csv"),
+              read.csv("sagamihara202109.csv"),
+              read.csv("sagamihara202110.csv")
+            )%>%
+            distinct(No,.keep_all = T)%>%
+            rename("Sex"="Gender","PR_Date"="Date","Residential_City"="City")%>%
+            mutate(Fixed_Date=PR_Date,
+                   Fixed_Date2=NA)%>%
+            arrange(desc(Fixed_Date))
+        }
       }
       
       write.csv(sagamihara,"sagamihara.csv",row.names = F)
