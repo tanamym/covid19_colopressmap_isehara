@@ -28,3 +28,4 @@ Residential_Cityは居住市区町村を表しています。取得先により�
 http://covid-map.bmi-tokai.jp/
 http://creativecommons.org/licenses/by/4.0/deed.ja
 のクリエイティブコモンズのライセンスのもとに提供しています。
+横浜市、横須賀市の2020年12月～2021年5月のデータを修正しました。（2021年11月9日）
