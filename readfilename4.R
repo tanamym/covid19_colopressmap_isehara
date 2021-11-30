@@ -22,7 +22,7 @@ repeat{
       filter(!str_detect(.,"list"))%>%
       rename("html"=".")%>%
       mutate(html=paste0("https://www.pref.kanagawa.jp",html))
-    # hn=1hn=2
+    # hn=1hn=2hn=6
   
     for (hn  in 1:nrow(html_top)) {
       if(hn==1){
@@ -143,6 +143,7 @@ repeat{
           #データフレームを初期化
           res3 <-data.frame()
         }
+        #print(k)
         path<-
           kana_pref[k,3]
         if(pdf_text(path)[1]=="")print(paste("ファイル名:",path,"を取得出来ません"))
@@ -212,11 +213,11 @@ repeat{
       if(html_top2!=html_top[1,]){
         kanagawa3<-
           rbind(kanagawa5,kanagawa3)
-        # kanagawa3<-kanagawa3%>%
-        #   filter(Fixed_Date<"2021-11-01")
+
         kana_hozon<-kanagawa3
-        write.csv(kana_hozon,"kanagawa_202110.csv")
-        #kanagawa3<-read.csv("kanagawa_202109.csv")[,-1]
+        write.csv(kana_hozon,"kanagawa_202111.csv")
+        #write.csv(kana_hozon,"kanagawa_202110.csv")
+        #kanagawa3<-read.csv("kanagawa_202110.csv")[,-1]
         print("上書きしました")
       }
       # kanagawa3<-kanagawa3%>%
@@ -233,10 +234,12 @@ repeat{
                             paste0("2021-",str_replace(判明日,"月","-"))
         ))%>%
         mutate(判明日 = str_replace(判明日,"日",""))%>%
+        mutate(判明日 = str_replace_all(判明日," ",""))%>%
         #追加####
       mutate(発表日=str_replace(発表日,"年","-"))%>%
         mutate(発表日=str_replace(発表日,"月","-"))%>%
         mutate(発表日=str_replace(発表日,"日",""))%>%
+        mutate(発表日=str_replace_all(発表日," ",""))%>%
         ####
         #変更####
       select(保健所,居住地,判明日,発表日,年代,性別)%>%
@@ -402,6 +405,8 @@ repeat{
       write.csv(kawasaki4,"kawasaki.csv")
       print("川崎市のデータを出力しました")
       
+      #茅ヶ崎市####
+      
       url_top3<-
         "https://www.city.chigasaki.kanagawa.jp/koho/1030702/1038773/index.html"
       rhtml_top3<-rvest::read_html(url_top3,encoding="UTF-8")
@@ -427,6 +432,10 @@ repeat{
       D<-Sys.Date()%>%
         str_remove_all("-")%>%
         str_remove_all("2021")
+      chi_pref<-
+        pdf_pref%>%
+        filter(str_detect(pref,"茅ヶ崎"))
+      chi4<-data.frame()
       if(str_detect(rhtml4[1,1],D)&nrow(chi_pref)==0){
         path2<-rhtml4[1,1]
         chi2<-pdf_text(path2)
@@ -445,7 +454,6 @@ repeat{
           mutate(pdate=str_replace_all(pdate,"日",""),
                  pdate=str_replace_all(pdate,"月","-"),
                  pdate=str_replace_all(pdate,"年","-"))
-        
         for (i in 1:length(chi2)) {
           chi3<-chi2[[i]]%>%
             str_split("\n")%>%
@@ -454,7 +462,7 @@ repeat{
           colnames(chi3)[1]<-"chr"
           chi4<-
             rbind(chi4,chi3)
-        }
+          }
         chi5<-
           chi4%>%
           filter(str_detect(chr,"例目")) %>%
@@ -480,50 +488,30 @@ repeat{
                  "Age"="年代","Sex"="性別","PR_Date"="発表日")%>%
           mutate(Fixed_Date=PR_Date)%>%
           filter(!str_detect(Fixed_Date,"NULL"))
-      }
+        }
       #chigasaki####
       chi_pref<-
         pdf_pref%>%
         filter(str_detect(pref,"茅ヶ崎"))
       if(nrow(chi_pref)!=0){
         k1=1
-      k2=nrow(chi_pref)
-      for (k in k1:k2) {#1月
-        if(k==k1){
-          #データフレームを初期化
-          chi4 <-data.frame()
-        }
+        k2=nrow(chi_pref)
+        for (k in k1:k2) {#1月
+          print(k)
+          if(k==k1){
+            #データフレームを初期化
+            chi4 <-data.frame()
+            }
+          #4月
+          path<-
+            chi_pref[k,3]
+      
+          chi<-pdf_text(path)
         
-        #4月
-        path<-
-          chi_pref[k,3]
-        
-        chi<-pdf_text(path)
-        
-        if(pdf_text(path)[1]=="")print(paste("ファイル名:",path,"を取得出来ません"))
-        #追加####
-        date_chi<-
-          chi[1]%>%
-          strsplit("\n")%>%
-          data.frame() %>%
-          data.table::setnames("chr")%>%
-          filter(str_detect(chr,"日")&str_detect(chr,"年"))%>%
-          mutate(pdate=str_replace_all(chr,"日.+","日"))%>%
-          mutate(pdate=str_replace_all(pdate," ",""))%>%
-          mutate(pdate=stri_trans_nfkc(pdate))%>%
-          # mutate(pdate=ifelse(str_detect(pdate,"令和3年"),str_replace(pdate,"令和3年","2021年"),
-          #                     ifelse(str_detect(pdate,"令和2年"),str_replace(pdate,"令和2年","2020年"),
-          #                            pdate)))%>%
-          mutate(pdate=str_replace_all(pdate,"日",""),
-                 pdate=str_replace_all(pdate,"月","-"),
-                 pdate=str_replace_all(pdate,"年","-"))
-
-        
-        if(k==1&date_chi[1,2]<Sys.Date()&str_detect(rhtml4[1,1],D)){
-          path2<-rhtml4[1,1]
-          chi2<-pdf_text(path2)
-          date_chi2<-
-            chi2[1]%>%
+          if(pdf_text(path)[1]=="")print(paste("ファイル名:",path,"を取得出来ません"))
+          #追加####
+          date_chi<-
+            chi[1]%>%
             strsplit("\n")%>%
             data.frame() %>%
             data.table::setnames("chr")%>%
@@ -531,61 +519,77 @@ repeat{
             mutate(pdate=str_replace_all(chr,"日.+","日"))%>%
             mutate(pdate=str_replace_all(pdate," ",""))%>%
             mutate(pdate=stri_trans_nfkc(pdate))%>%
+          # mutate(pdate=ifelse(str_detect(pdate,"令和3年"),str_replace(pdate,"令和3年","2021年"),
+          #                     ifelse(str_detect(pdate,"令和2年"),str_replace(pdate,"令和2年","2020年"),
+          #                            pdate)))%>%
+            mutate(pdate=str_replace_all(pdate,"日",""),
+                 pdate=str_replace_all(pdate,"月","-"),
+                 pdate=str_replace_all(pdate,"年","-"))
+          if(k==1&date_chi[1,2]<Sys.Date()&str_detect(rhtml4[1,1],D)){
+            path2<-rhtml4[1,1]
+            chi2<-pdf_text(path2)
+            date_chi2<-
+              chi2[1]%>%
+              strsplit("\n")%>%
+              data.frame() %>%
+              data.table::setnames("chr")%>%
+              filter(str_detect(chr,"日")&str_detect(chr,"年"))%>%
+              mutate(pdate=str_replace_all(chr,"日.+","日"))%>%
+              mutate(pdate=str_replace_all(pdate," ",""))%>%
+              mutate(pdate=stri_trans_nfkc(pdate))%>%
             # mutate(pdate=ifelse(str_detect(pdate,"令和3年"),str_replace(pdate,"令和3年","2021年"),
             #                     ifelse(str_detect(pdate,"令和2年"),str_replace(pdate,"令和2年","2020年"),
             #                            pdate)))%>%
-            mutate(pdate=str_replace_all(pdate,"日",""),
+              mutate(pdate=str_replace_all(pdate,"日",""),
                    pdate=str_replace_all(pdate,"月","-"),
                    pdate=str_replace_all(pdate,"年","-"))
-          
-          for (i in 1:length(chi2)) {
-            chi3<-chi2[[i]]%>%
+            for (i in 1:length(chi2)) {
+              chi3<-chi2[[i]]%>%
+                str_split("\n")%>%
+                data.frame() %>%
+                mutate(発表日=date_chi2[1,2])
+              colnames(chi3)[1]<-"chr"
+              chi4<-
+                rbind(chi4,chi3)
+            }
+            }
+          for (i in 1:length(chi)) {
+            chi3<-chi[[i]]%>%
               str_split("\n")%>%
               data.frame() %>%
-              mutate(発表日=date_chi2[1,2])
+              mutate(発表日=date_chi[1,2])
             colnames(chi3)[1]<-"chr"
             chi4<-
               rbind(chi4,chi3)
           }
-        }
-        for (i in 1:length(chi)) {
-          chi3<-chi[[i]]%>%
-            str_split("\n")%>%
-            data.frame() %>%
-            mutate(発表日=date_chi[1,2])
-          colnames(chi3)[1]<-"chr"
-          chi4<-
-            rbind(chi4,chi3)
-        }
-        
-        
-      }
-      chi5<-
-        chi4%>%
-        filter(str_detect(chr,"例目")) %>%
-        filter(str_detect(chr,"市|町|県内|県外")) %>%
-        mutate(chr=str_replace(chr,"^ +",""),
+          }
+        chi5<-
+          chi4%>%
+          filter(str_detect(chr,"例目")) %>%
+          filter(str_detect(chr,"市|町|県内|県外")) %>%
+          mutate(chr=str_replace(chr,"^ +",""),
                chr=str_replace_all(chr," +","_"),
                chr=str_replace(chr,"代",""))%>%
-        tidyr::separate(chr,into = c("X1","例目","年代","性別","居住地",
+          tidyr::separate(chr,into = c("X1","例目","年代","性別","居住地",
                                      "X6","X7","X8","陽性確定日","X10"),sep ="_")%>%
-        dplyr::select(例目,年代,性別,居住地,陽性確定日,発表日)%>%
-        filter(!is.na(例目))%>%
-        mutate(年代=stringi::stri_trans_nfkc(年代))
-      chigasaki2<-
-        chi5%>%
-        mutate(陽性確定日 = ifelse(str_detect(陽性確定日,"12月"),
+          dplyr::select(例目,年代,性別,居住地,陽性確定日,発表日)%>%
+          filter(!is.na(例目))%>%
+          mutate(年代=stringi::stri_trans_nfkc(年代))%>%
+          distinct(例目,.keep_all = T)
+        chigasaki2<-
+          chi5%>%
+          mutate(陽性確定日 = ifelse(str_detect(陽性確定日,"12月"),
                               paste0("2020-",str_replace(陽性確定日,"月","-")),
                               paste0("2021-",str_replace(陽性確定日,"月","-"))
-        ) )%>%
-        mutate(陽性確定日 = str_replace(陽性確定日,"日",""))%>%
-        select(年代,性別,居住地,陽性確定日,発表日)%>%
-        #select(-年代,-性別) %>%
-        rename("Fixed_Date2"="陽性確定日","Residential_City"="居住地",
+                              ))%>%
+          mutate(陽性確定日 = str_replace(陽性確定日,"日",""))%>%
+          select(年代,性別,居住地,陽性確定日,発表日)%>%
+          #select(-年代,-性別) %>%
+          rename("Fixed_Date2"="陽性確定日","Residential_City"="居住地",
                "Age"="年代","Sex"="性別","PR_Date"="発表日")%>%
-        mutate(Fixed_Date=PR_Date)%>%
-        filter(!str_detect(Fixed_Date,"NULL"))
-      }
+          mutate(Fixed_Date=PR_Date)%>%
+          filter(!str_detect(Fixed_Date,"NULL"))
+        }
       
       
       #前回使用したURLに一致しなかった場合に実行
@@ -609,9 +613,10 @@ repeat{
       
       #横須賀市####
       HTML <- read_html("https://www.city.yokosuka.kanagawa.jp/3130/hasseijoukyou.html")
+      #HTML <- read_html("https://www.city.yokosuka.kanagawa.jp/3130/hasseijoukyou_202110.html")
       #HTML<-read_html("https://www.city.yokosuka.kanagawa.jp/3130/hasseijoukyou_202109.html")
       #HTML <- read_html("https://www.city.yokosuka.kanagawa.jp/3130/hasseijoukyou_202108_2.html")
-      HTML
+      #HTML
       Ahref <-
         HTML %>%
         html_nodes("a") %>%
@@ -632,13 +637,13 @@ repeat{
       #Ahref<-rbind(Ahref,"/3130/nagekomi/20210901.html")
       TD <- data.frame()
       for (i in 1:nrow(Ahref)) {
-        if(i==19){
-          Ahref$html[i]<-"/3130/nagekomi/20210828.html"
-        }
+        # if(i==19){
+        #   Ahref$html[i]<-"/3130/nagekomi/20210828.html"
+        # }
         yh <- read_html(paste0("https://www.city.yokosuka.kanagawa.jp",Ahref$html[i]))
-        if(i==19){
-          next
-        }
+        # if(i==19){
+        #   next
+        # }
         yht <-
           yh %>%
           html_nodes("div") %>%
@@ -727,6 +732,9 @@ repeat{
         mutate(No=ifelse(No=="6999",5999,No))%>%
         mutate(No=ifelse(No=="6263"&患者確定日=="9月11日",6163,No))%>%
         full_join(TDS2)%>%
+        mutate(年代=ifelse(No=="6389","0-10",年代))%>%
+        mutate(性別=ifelse(No=="6389","男性",性別))%>%
+        mutate(職業等=ifelse(No=="6389","小学生",職業等))%>%
         filter(!is.na(年代))
        #write.csv(TDS3,"yokosuka_202107.csv",row.names = F)
       #write.csv(TDS3,"yokosuka_202108.csv",row.names = F)
@@ -1697,17 +1705,25 @@ repeat{
       #横浜市
       yokohama<-read.csv("yokohama.csv")%>%
         select(-No)%>%
+        mutate(Fixed_Date=as.Date(Fixed_Date),
+               Fixed_Date2=as.Date(Fixed_Date2),
+               PR_Date=as.Date(PR_Date))%>%
         rbind(patient%>%
-                filter(Fixed_Date>="2020-12-01",Fixed_Date<"2020-01-01") %>%
+                filter(Fixed_Date>="2020-12-01",Fixed_Date<"2021-01-01") %>%
                 filter(Residential_City=="横浜市"))%>%
         mutate(note=NA)%>%
         mutate(hos="yokohama")
       #横須賀市
       yokosuka<-read.csv("yokosuka.csv")%>%
         select(Fixed_Date,PR_Date,Sex,Age,City,Hos,Fixed_Date2)%>%
+        mutate(Fixed_Date=as.Date(Fixed_Date),
+               Fixed_Date2=as.Date(Fixed_Date2),
+               PR_Date=as.Date(PR_Date))%>%
         rename("Residential_City"="City")%>%
         rbind(patient%>%
-                filter(Fixed_Date>="2020-12-01",Fixed_Date<"2020-05-01") %>%
+                filter(Fixed_Date>="2020-12-01",Fixed_Date<"2021-05-01") %>%
+                # filter(Fixed_Date>="2020-12-01") %>%
+                # filter(Fixed_Date<"2020-05-01") %>%
                 filter(Residential_City=="横須賀市"))%>%
         mutate(Residential_City=str_remove(Residential_City,".+郡"))%>%
         mutate(note=NA)%>%
@@ -1736,7 +1752,7 @@ repeat{
         html_text()
       Date<-Sys.Date()
       Date<-str_remove(Date,"2021-")%>%
-        str_remove_all("0")%>%
+        str_replace_all("月0","月")%>%
         str_replace("-","月")
       #Date<-paste0("11月",format(Sys.Date(),"%d")%>%str_remove_all("0"))
       HTML2<-cbind(TEXT,URL)%>%
@@ -1779,6 +1795,10 @@ repeat{
         kanagawa_today<-data.frame()
       }
       #kanagawa_today2<-kanagawa_today
+      if(Sys.Date()=="2021-11-10"){
+        kanagawa_today<-kanagawa_today%>%
+          mutate(Fixed_Date2=str_replace(Fixed_Date2,"202.年",""))
+      }
       kanagawa<-read.csv("kanagawa2.csv") %>%
         select(-X)%>%
         mutate(PR_Date=as.Date(PR_Date))%>%
