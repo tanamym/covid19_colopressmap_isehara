@@ -886,7 +886,8 @@ repeat{
       TD <-
         TD %>%
         # mutate(Text2=gsub(" ","",Text)) %>%
-        mutate(Text2=stri_trans_nfkc(Text))
+        mutate(Text2=stri_trans_nfkc(Text))%>%
+        mutate(Text2=gsub("\u6236塚","戸塚",Text2))
       TD2 <-
         TD2 %>%
         # mutate(Text2=gsub(" ","",Text)) %>%
@@ -931,7 +932,8 @@ repeat{
             read.csv("yoko_covid2112.csv")
             )%>%
         mutate(Date=as.Date(Date,format="%Y年%m月%d日"))%>%
-        mutate(hos="yokohama")
+        mutate(hos="yokohama")%>%
+        filter(Date<"2021-12-08")
       write.csv(yoko_covid,"yoko_covid.csv",row.names = F,fileEncoding="UTF-8")
       sr=which(grepl("男|女",TD$Text2))
       n=1
@@ -953,9 +955,10 @@ repeat{
         at<-attr(re,"match.length")
         TDS$Gender[n]=substring(tds,re,re+at-1)
         
-        re<-regexpr("[^ ]+[市区町村]|[^ ]+[内外])",tds)
+        re<-regexpr("[^ ]+[市区町村]|[^ ]+[内外])|鶴見|神奈川|西|中|南|港南|保土ケ谷|旭|磯子|金沢|港北|緑|青葉|都筑|戸塚|栄|泉|瀬谷|調査中",tds)
         at<-attr(re,"match.length")
         TDS$City[n]=substring(tds,re,re+at-1)
+        if(as.Date(TDS$Date[n],"%Y年%m月%d日")<"2021-12-08") TDS$City[n]=""
         
         #print(n)
       }
@@ -1076,7 +1079,8 @@ repeat{
         TD <-
           TD %>%
           # mutate(Text2=gsub(" ","",Text)) %>%
-          mutate(Text2=stri_trans_nfkc(Text))
+          mutate(Text2=stri_trans_nfkc(Text))%>%
+          mutate(Text2=gsub("\u6236塚","戸塚",Text2))
         TD2 <-
           TD2 %>%
           # mutate(Text2=gsub(" ","",Text)) %>%
@@ -1134,7 +1138,7 @@ repeat{
           at<-attr(re,"match.length")
           TDS$Gender[n]=substring(tds,re,re+at-1)
           
-          re<-regexpr("[^ ]+[市区町村]|[^ ]+[内外])",tds)
+          re<-regexpr("[^ ]+[市区町村]|[^ ]+[内外])|鶴見|神奈川|西|中|南|港南|保土ケ谷|旭|磯子|金沢|港北|緑|青葉|都筑|戸塚|栄|泉|瀬谷|調査中",tds)
           at<-attr(re,"match.length")
           TDS$City[n]=substring(tds,re,re+at-1)
           
@@ -1223,11 +1227,11 @@ repeat{
       #   )
       # write.csv(yokohama,"yokohama202107.csv",row.names = F)
       #te<-read.csv("yokohama202107.csv")
-      while(TRUE){
-        yoko<-try(fread("https://www.city.yokohama.lg.jp/kurashi/kenko-iryo/yobosesshu/kansensho/coronavirus/corona-data.files/kanja_list.csv",encoding="UTF-8")%>%
-                    filter(as.Date(公表日)>="2021-12-08"))
-        if(class(yoko) != "try-error")break
-      }
+      # while(TRUE){
+      #   yoko<-try(fread("https://www.city.yokohama.lg.jp/kurashi/kenko-iryo/yobosesshu/kansensho/coronavirus/corona-data.files/kanja_list.csv",encoding="UTF-8")%>%
+      #               filter(as.Date(公表日)>="2021-12-08"))
+      #   if(class(yoko) != "try-error")break
+      # }
       
       if(yoko_html1[1,2]==TRUE){
         yokohama<-
@@ -1265,11 +1269,15 @@ repeat{
           mutate(Age=str_remove(Age,"代"))%>%
           mutate(Age=str_replace(Age,"10歳","10歳未満"))
       }
+      # yokohama<-
+      #   left_join(yokohama,yoko,by="No")%>%
+      #   mutate(Residential_City=ifelse(!is.na(住所地),
+      #                                  ifelse(Residential_City=="","横浜市",Residential_City),Residential_City))%>%
+      #   mutate(note=住所地)
       yokohama<-
-        left_join(yokohama,yoko,by="No")%>%
-        mutate(Residential_City=ifelse(!is.na(住所地),
-                                       ifelse(Residential_City=="","横浜市",Residential_City),Residential_City))%>%
-        mutate(note=住所地)
+        yokohama%>%
+        mutate(note=Residential_City)%>%
+        mutate(Residential_City=ifelse(str_detect(Residential_City,"市外|非公表"),Residential_City,"横浜市"))
       write.csv(yokohama,"yokohama.csv",row.names = F)
       print("横浜市を出力しました")
       #相模原市####
@@ -1713,7 +1721,7 @@ repeat{
         #6571欠番
         #7056欠番
         if(n>1)
-          if(TDS$no[n]==1|sr[n]-sr[n-1]>5|TDS$No[n]==4482|TDS$No[n]==6572|TDS$No[n]==7057) #1番または改ページ
+          if(TDS$no[n]==1|sr[n]-sr[n-1]>5|TDS$No[n]==4482|TDS$No[n]==6572|TDS$No[n]==7057|TDS$No[n]==7023) #1番または改ページ
             d=d+1
         re<-regexpr("202.年.+月.+日",TD$Text2[day[d]])
         at<-attr(re,"match.length")
@@ -2005,7 +2013,7 @@ repeat{
                Age=str_replace(Age,"－","-"),
                Age=str_remove_all(Age," "))%>%
         # arrange(desc(Fixed_Date),Hospital_Pref,Residential_Pref,Residential_City)
-        arrange(desc(Fixed_Date),Hospital_Pref,Residential_City)
+        arrange(desc(Fixed_Date),Hospital_Pref,Residential_City,Hos)
       data2021<-
         data%>%
         filter(Fixed_Date>as.Date("2021-09-30"))
@@ -2022,7 +2030,7 @@ repeat{
                  Age=str_remove_all(Age," "))%>%
           #filter(Fixed_Date<Sys.Date())%>%
           # arrange(desc(Fixed_Date),Hospital_Pref,Residential_Pref,Residential_City)
-          arrange(desc(Fixed_Date),Hospital_Pref,Residential_City)
+          arrange(desc(Fixed_Date),Hospital_Pref,Residential_City,Hos)
         data2021<-
           data%>%
           filter(Fixed_Date>as.Date("2021-09-30"))
