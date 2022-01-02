@@ -4,6 +4,15 @@ library(pdftools)
 library(rvest)
 library(stringi)
 library(stringr)
+D<-"令和4年1月1日"
+RtoS<-function(date=D){
+  lo<-str_locate(D,"令和.+年")
+  s=lo[1,1]
+  e=lo[1,2]
+  S<-as.numeric(str_sub(D,s+2,e-1))+2018
+  seireki<-paste0(S,str_sub(D,e,-1))
+  return(seireki)
+}
 #2021年8月20日作成
 repeat{
   while(format(Sys.time(),"%H")%in%c("17","18","19","20")){
@@ -130,7 +139,8 @@ repeat{
         html_attr("href")%>%#urlの抽出
         as.data.frame()%>%
         filter(str_detect(.,"pdf"))%>%
-        rename("pdf"=".")
+        rename("pdf"=".")%>%
+        distinct()
       pref<-
         rhtml%>%
         html_nodes("a")%>%
@@ -224,7 +234,8 @@ repeat{
           rbind(kanagawa5,kanagawa3)
 
         kana_hozon<-kanagawa3
-        write.csv(kana_hozon,"kanagawa_202111.csv")
+        write.csv(kana_hozon,"kanagawa_202112.csv")
+        #write.csv(kana_hozon,"kanagawa_202111.csv")
         #write.csv(kana_hozon,"kanagawa_202110.csv")
         #kanagawa3<-read.csv("kanagawa_202110.csv")[,-1]
         print("上書きしました")
@@ -238,9 +249,10 @@ repeat{
       #   mutate(Fixed_Date=PR_Date)
       kanagawa5<-
         res5%>%
+        mutate(発表日 = RtoS(発表日))%>%
         mutate(判明日 = ifelse(str_detect(判明日,"12月"),
-                            paste0("2020-",str_replace(判明日,"月","-")),
-                            paste0("2021-",str_replace(判明日,"月","-"))
+                            paste0("2021-",str_replace(判明日,"月","-")),
+                            paste0("2022-",str_replace(判明日,"月","-"))
         ))%>%
         mutate(判明日 = str_replace(判明日,"日",""))%>%
         mutate(判明日 = str_replace_all(判明日," ",""))%>%
@@ -323,7 +335,7 @@ repeat{
           mutate(pdate=stri_trans_nfkc(pdate))%>%
           mutate(pdate=ifelse(str_detect(pdate,"令和3年"),str_replace(pdate,"令和3年","2021年"),
                               ifelse(str_detect(pdate,"令和2年"),str_replace(pdate,"令和2年","2020年"),
-                                     pdate)))%>%
+                                     ifelse(str_detect(pdate,"令和4年"),str_replace(pdate,"令和4年","2022年"),pdate))))%>%
           mutate(pdate=str_replace_all(pdate,"日",""),
                  pdate=str_replace_all(pdate,"月","-"),
                  pdate=str_replace_all(pdate,"年","-"))
@@ -371,8 +383,9 @@ repeat{
         # mutate(確定日=ifelse(str_detect(確定日,"/"),
         #                   str_replace_all(確定日,"[^0-9/]",""),
         #                   確定日))%>%
-        mutate(確定日=ifelse(str_detect(確定日,"調査中"),NA,
-                          paste0("2021-",str_replace(確定日,"月","-"))),
+        mutate(確定日=ifelse(str_detect(確定日,"12"),paste0("2021-",str_replace(確定日,"月","-")),
+                          paste0("2022-",str_replace(確定日,"月","-"))))%>%
+        mutate(確定日=ifelse(str_detect(確定日,"調査中"),NA,確定日),
                   確定日=str_replace(確定日,"日",""))%>%
         mutate(確定日=ifelse(str_detect(確定日,"/"),
                           str_replace(確定日,"/","-"),
@@ -402,7 +415,8 @@ repeat{
               read.csv("kawasaki202108.csv"),
               read.csv("kawasaki202109.csv"),
               read.csv("kawasaki202110.csv"),
-              read.csv("kawasaki202111.csv"))%>%
+              read.csv("kawasaki202111.csv"),
+              read.csv("kawasaki2112.csv"))%>%
         rename("list"="居住地","Fixed_Date2"="確定日",
                "Residential_City"="居住市区町村",
                "Residential_Pref"="居住都道府県",
@@ -456,7 +470,7 @@ repeat{
       chigasaki2<-data.frame()
       D<-Sys.Date()%>%
         str_remove_all("-")%>%
-        str_remove_all("2021")
+        str_remove_all("2021|2022")
       chi_pref<-
         pdf_pref%>%
         filter(str_detect(pref,"茅ヶ崎"))
@@ -503,8 +517,8 @@ repeat{
         chigasaki2<-
           chi5%>%
           mutate(陽性確定日 = ifelse(str_detect(陽性確定日,"12月"),
-                                paste0("2020-",str_replace(陽性確定日,"月","-")),
-                                paste0("2021-",str_replace(陽性確定日,"月","-"))
+                                paste0("2021-",str_replace(陽性確定日,"月","-")),
+                                paste0("2022-",str_replace(陽性確定日,"月","-"))
           ) )%>%
           mutate(陽性確定日 = str_replace(陽性確定日,"日",""))%>%
           select(年代,性別,居住地,陽性確定日,発表日)%>%
@@ -604,8 +618,8 @@ repeat{
         chigasaki2<-
           chi5%>%
           mutate(陽性確定日 = ifelse(str_detect(陽性確定日,"12月"),
-                              paste0("2020-",str_replace(陽性確定日,"月","-")),
-                              paste0("2021-",str_replace(陽性確定日,"月","-"))
+                              paste0("2021-",str_replace(陽性確定日,"月","-")),
+                              paste0("2022-",str_replace(陽性確定日,"月","-"))
                               ))%>%
           mutate(陽性確定日 = str_replace(陽性確定日,"日",""))%>%
           select(年代,性別,居住地,陽性確定日,発表日)%>%
@@ -622,7 +636,8 @@ repeat{
         chigasaki3<-
           rbind(chigasaki2,chigasaki3)
         chi_hozon<-chigasaki3
-        write.csv(chi_hozon,"chigasaki_202111.csv")
+        write.csv(chi_hozon,"chigasaki_202112.csv")
+        #write.csv(chi_hozon,"chigasaki_202111.csv")
         #chigasaki3<-read.csv("chigasaki_202109.csv")[,-1]
         print("上書きしました")
       }  
@@ -785,7 +800,8 @@ repeat{
         read.csv("yokosuka_202109.csv"),
         read.csv("yokosuka_202110.csv"),
         read.csv("yokosuka_202111.csv"),
-        read.csv("yokosuka_202112.csv")
+        read.csv("yokosuka_202112.csv"),
+        read.csv("yokosuka_202201.csv")
       )%>%
         filter(!is.na(No))%>%
         rename("PR_Date"="Date","Fixed_Date2"="患者確定日")%>%
@@ -805,7 +821,8 @@ repeat{
           read.csv("yokosuka_20210815.csv"),
           read.csv("yokosuka_202109.csv"),
           read.csv("yokosuka_202110.csv"),
-          read.csv("yokosuka_202111.csv")
+          read.csv("yokosuka_202111.csv"),
+          read.csv("yokosuka_202112.csv")
         )%>%
           filter(!is.na(No))%>%
           rename("PR_Date"="Date","Fixed_Date2"="患者確定日")%>%
@@ -855,6 +872,7 @@ repeat{
           strsplit("\n") %>%
           data.frame() %>%
           mutate(Date=d) %>%
+          mutate(Date=gsub("令和4年","2022年",Date)) %>%
           mutate(Date=gsub("令和3年","2021年",Date)) %>%
           mutate(Date=gsub("令和2年","2020年",Date)) %>%
           mutate(Date=gsub("日.+","日",Date))
@@ -869,6 +887,7 @@ repeat{
             strsplit("\n") %>%
             data.frame() %>%
             mutate(Date=d) %>%
+            mutate(Date=gsub("令和4年","2022年",Date)) %>%
             mutate(Date=gsub("令和3年","2021年",Date)) %>%
             mutate(Date=gsub("令和2年","2020年",Date)) %>%
             mutate(Date=gsub("日.+","日",Date))
@@ -929,7 +948,8 @@ repeat{
             read.csv("yoko_covid2109.csv"),
             read.csv("yoko_covid2110.csv"),
             read.csv("yoko_covid2111.csv"),
-            read.csv("yoko_covid2112.csv")
+            read.csv("yoko_covid2112.csv"),
+            read.csv("yoko_covid2201.csv")
             )%>%
         mutate(Date=as.Date(Date,format="%Y年%m月%d日"))%>%
         mutate(hos="yokohama")%>%
@@ -1053,6 +1073,7 @@ repeat{
           strsplit("\n") %>%
           data.frame() %>%
           mutate(Date=d) %>%
+          mutate(Date=gsub("令和4年","2022年",Date)) %>%
           mutate(Date=gsub("令和3年","2021年",Date)) %>%
           mutate(Date=gsub("令和2年","2020年",Date)) %>%
           mutate(Date=gsub("日.+","日",Date))
@@ -1064,6 +1085,7 @@ repeat{
             strsplit("\n") %>%
             data.frame() %>%
             mutate(Date=d) %>%
+            mutate(Date=gsub("令和4年","2022年",Date)) %>%
             mutate(Date=gsub("令和3年","2021年",Date)) %>%
             mutate(Date=gsub("令和2年","2020年",Date)) %>%
             mutate(Date=gsub("日.+","日",Date))
@@ -1114,6 +1136,7 @@ repeat{
                 read.csv("yoko_covid2110.csv"),
                 read.csv("yoko_covid2111.csv"),
                 read.csv("yoko_covid2112.csv"),
+                read.csv("yoko_covid2201.csv"),
                 read.csv("yoko_covid_today.csv"))%>%
           mutate(Date=as.Date(Date,format="%Y年%m月%d日"))%>%
           filter(Date<"2021-12-08")
@@ -1236,6 +1259,7 @@ repeat{
       if(yoko_html1[1,2]==TRUE){
         yokohama<-
           rbind(
+            read.csv("yokohama202201.csv"),
             read.csv("yokohama202112.csv"),
             read.csv("yokohama202111.csv"),
             read.csv("yokohama202110.csv"),
@@ -1254,6 +1278,7 @@ repeat{
       }else{
         yokohama<-
           rbind(
+            read.csv("yokohama202201.csv"),
             read.csv("yokohama202112.csv"),
             read.csv("yokohama202111.csv"),
             read.csv("yokohama202110.csv"),
@@ -1319,6 +1344,7 @@ repeat{
             strsplit("\n") %>%
             data.frame() %>%
             mutate(Date=d) %>%
+            mutate(Date=gsub("令和4年","2022年",Date)) %>%
             mutate(Date=gsub("令和3年","2021年",Date)) %>%
             mutate(Date=gsub("令和2年","2020年",Date))
           
@@ -1433,6 +1459,7 @@ repeat{
             strsplit("\n") %>%
             data.frame() %>%
             mutate(Date=d) %>%
+            mutate(Date=gsub("令和4年","2022年",Date)) %>%
             mutate(Date=gsub("令和3年","2021年",Date)) %>%
             mutate(Date=gsub("令和2年","2020年",Date))
           
@@ -1539,6 +1566,7 @@ repeat{
                 read.csv("sagamihara202110.csv"),
                 read.csv("sagamihara202111.csv"),
                 read.csv("sagamihara202112.csv"),
+                read.csv("sagamihara202201.csv"),
                 read.csv("sagamiharatoday.csv")
                 )%>%
               arrange(Date)%>%
@@ -1559,7 +1587,8 @@ repeat{
                 read.csv("sagamihara202109.csv"),
                 read.csv("sagamihara202110.csv"),
                 read.csv("sagamihara202111.csv"),
-                read.csv("sagamihara202112.csv")
+                read.csv("sagamihara202112.csv"),
+                read.csv("sagamihara202201.csv")
               )%>%
               arrange(Date)%>%
               distinct(No,.keep_all = T)%>%
@@ -1580,7 +1609,8 @@ repeat{
                 read.csv("sagamihara202109.csv"),
                 read.csv("sagamihara202110.csv"),
                 read.csv("sagamihara202111.csv"),
-                read.csv("sagamihara202112.csv")
+                read.csv("sagamihara202112.csv"),
+                read.csv("sagamihara202201.csv")
                 )%>%
               arrange(Date)%>%
               distinct(No,.keep_all = T)%>%
@@ -1607,6 +1637,7 @@ repeat{
                 read.csv("sagamihara202109.csv"),
                 read.csv("sagamihara202110.csv"),
                 read.csv("sagamihara202111.csv"),
+                read.csv("sagamihara202112.csv"),
                 read.csv("sagamiharatoday.csv")
               )%>%
               arrange(Date)%>%
@@ -1627,7 +1658,8 @@ repeat{
                 read.csv("sagamihara202108.csv"),
                 read.csv("sagamihara202109.csv"),
                 read.csv("sagamihara202110.csv"),
-                read.csv("sagamihara202111.csv")
+                read.csv("sagamihara202111.csv"),
+                read.csv("sagamihara202112.csv")
                 )%>%
               arrange(Date)%>%
               distinct(No,.keep_all = T)%>%
@@ -1700,6 +1732,8 @@ repeat{
       
       sr=which(grepl("男性|女性|男児|女児",TD$Text2))
       day=which(grepl("202.年.+月.+日",TD$Text2))
+      #7066欠番
+      day<-day[-43]
       # hoken=c("平塚","鎌倉","小田原","厚木")
       n=1
       TDS <- data.frame(Date="",No=1:length(sr),Age="",Gender="",Hos="",City="")
@@ -1720,8 +1754,11 @@ repeat{
         #4481欠番no2332
         #6571欠番
         #7056欠番
+        #7071欠番
+        #7066欠番
+        #7067欠番
         if(n>1)
-          if(TDS$no[n]==1|sr[n]-sr[n-1]>5|TDS$No[n]==4482|TDS$No[n]==6572|TDS$No[n]==7057|TDS$No[n]==7023) #1番または改ページ
+          if(TDS$no[n]==1|sr[n]-sr[n-1]>5|TDS$No[n]==4482|TDS$No[n]==6572|TDS$No[n]==7057|TDS$No[n]==7023|TDS$No[n]==7072|TDS$No[n]==7067|TDS$No[n]==7068) #1番または改ページ
             d=d+1
         re<-regexpr("202.年.+月.+日",TD$Text2[day[d]])
         at<-attr(re,"match.length")
@@ -1886,8 +1923,9 @@ repeat{
         html_nodes("a")%>%
         html_text()
       Date<-Sys.Date()
-      Date<-str_remove(Date,"2021-")%>%
+      Date<-str_remove(Date,"2021-|2022-")%>%
         str_replace("-","月")%>%
+        str_replace_all("01","1")%>%
         str_replace_all("月0","月")
       #Date<-paste0("11月",format(Sys.Date(),"%d")%>%str_remove_all("0"))
       HTML2<-cbind(TEXT,URL)%>%
@@ -1926,7 +1964,7 @@ repeat{
                                          Hos="神奈川県",
                                          hos="kanagawa")%>%
                                   mutate(Fixed_Date2=str_remove(Fixed_Date2,"日"),
-                                         Fixed_Date2=paste0("2021-",str_replace(Fixed_Date2,"月","-"))))
+                                         Fixed_Date2=paste0("2022-",str_replace(Fixed_Date2,"月","-"))))
             if(class(kanagawa_today) != "try-error")break
           }
            
@@ -2013,7 +2051,7 @@ repeat{
                Age=str_replace(Age,"－","-"),
                Age=str_remove_all(Age," "))%>%
         # arrange(desc(Fixed_Date),Hospital_Pref,Residential_Pref,Residential_City)
-        arrange(desc(Fixed_Date),Hospital_Pref,Residential_City,Hos)
+        arrange(desc(Fixed_Date),Hospital_Pref,Hos,Residential_City)
       data2021<-
         data%>%
         filter(Fixed_Date>as.Date("2021-09-30"))
@@ -2030,7 +2068,7 @@ repeat{
                  Age=str_remove_all(Age," "))%>%
           #filter(Fixed_Date<Sys.Date())%>%
           # arrange(desc(Fixed_Date),Hospital_Pref,Residential_Pref,Residential_City)
-          arrange(desc(Fixed_Date),Hospital_Pref,Residential_City,Hos)
+          arrange(desc(Fixed_Date),Hospital_Pref,Hos,Residential_City)
         data2021<-
           data%>%
           filter(Fixed_Date>as.Date("2021-09-30"))
