@@ -36,7 +36,7 @@ repeat{
       filter(!str_detect(.,"list"))%>%
       rename("html"=".")%>%
       mutate(html=paste0("https://www.pref.kanagawa.jp",html))
-    # hn=1hn=2hn=6
+    # hn=1hn=2hn=3hn=4hn=5hn=6
   
     for (hn  in 1:nrow(html_top)) {
       if(hn==1){
@@ -261,7 +261,8 @@ repeat{
       #前回使用したURLに一致しなかった場合に実行
       if(html_top2!=html_top[1,]){
         kanagawa3<-
-          rbind(kanagawa5,kanagawa3)
+          rbind(kanagawa5,kanagawa3)%>%
+          filter(Fixed_Date<Sys.Date()-1)
 
         kana_hozon<-kanagawa3
         write.csv(kana_hozon,"kanagawa_202201.csv")
@@ -644,6 +645,8 @@ repeat{
       
       #前回使用したURLに一致しなかった場合に実行
       if(html_top2!=html_top[1,]){
+        # chigasaki3<-chigasaki3%>%
+        #   filter(Fixed_Date!="2021-9-1")
         chigasaki3<-
           rbind(chigasaki2,chigasaki3)
         chigasaki3<-
@@ -670,7 +673,7 @@ repeat{
         HTML <- try(read_html("https://www.city.yokosuka.kanagawa.jp/3130/hasseijoukyou.html"))
         if(class(HTML) != "try-error")break
       }
-      
+      #HTML <- try(read_html("https://www.city.yokosuka.kanagawa.jp/3130/hasseijoukyou_202201.html"))
       #HTML <- read_html("https://www.city.yokosuka.kanagawa.jp/3130/hasseijoukyou_202110.html")
       #HTML<-read_html("https://www.city.yokosuka.kanagawa.jp/3130/hasseijoukyou_202109.html")
       #HTML <- read_html("https://www.city.yokosuka.kanagawa.jp/3130/hasseijoukyou_202108_2.html")
@@ -688,7 +691,11 @@ repeat{
       file<-paste0("/3130/nagekomi/",D2,".html")
       HT<-read_html(paste0("https://www.city.yokosuka.kanagawa.jp",
                        file))%>%
-        html_table() 
+        html_nodes("div") %>%
+        html_text() %>%
+        data.frame() %>%
+        rename(Text=".") %>%
+        filter(grepl("^\n+新型コロナウイルス感染症による市内の患者確認",Text))
       if(length(HT)!=0){
          if(nrow(Ahref)==0){
         Ahref<-data.frame(html=file)
@@ -849,9 +856,9 @@ repeat{
         
      
       }
-      TDS<-
-        rbind(TDS,data.frame(Date="20220126",No=8275,Sex="男性",Age="10歳未満",City="横須賀市",同居人="調査中",
-                 感染経路="調査中",現在の症状="不明",Hos=""))
+      # TDS<-
+      #   rbind(TDS,data.frame(Date="20220126",No=8275,Sex="男性",Age="10歳未満",City="横須賀市",同居人="調査中",
+      #            感染経路="調査中",現在の症状="不明",Hos=""))
       
       te <-
         TDS %>%
@@ -2107,10 +2114,12 @@ repeat{
                Age=str_replace(Age,"－","-"),
                Age=str_remove_all(Age," "))%>%
         arrange(desc(Fixed_Date),Hospital_Pref,Hos,Residential_City)
-      data2021<-
+      # data2021<-
+      #   data%>%
+      #   filter(Fixed_Date>as.Date("2021-09-30"))
+      data2022<-
         data%>%
-        filter(Fixed_Date>as.Date("2021-09-30"))
-
+        filter(Fixed_Date>=as.Date("2022-02-01"))
       if(format(Sys.time(),"%H")%in%c("17","18","19","20","21")){
         data<-bind_rows(data2,data3,kanagawa2,kawasaki,chigasaki)%>%
           select(Fixed_Date,Hospital_Pref,Residential_City,Age,
@@ -2120,12 +2129,20 @@ repeat{
                  Age=str_replace(Age,"－","-"),
                  Age=str_remove_all(Age," "))%>%
           arrange(desc(Fixed_Date),Hospital_Pref,Hos,Residential_City)
-        data2021<-
+        # data2021<-
+        #   data%>%
+        #   filter(Fixed_Date>as.Date("2021-09-30"))
+        data2022<-
           data%>%
-          filter(Fixed_Date>as.Date("2021-09-30"))
+          filter(Fixed_Date>=as.Date("2022-02-01"))
+        # data202201<-
+        #   data%>%
+        #   filter(Fixed_Date>as.Date("2021-09-30"))%>%
+        #   filter(Fixed_Date<=as.Date("2022-01-31"))
       }
-
-      write.csv(data2021,"data2021.csv",row.names=F,fileEncoding="UTF-8")
+      write.csv(data2022,"data2022.csv",row.names=F,fileEncoding="UTF-8")
+      #write.csv(data202201,"data202201.csv",row.names=F,fileEncoding="UTF-8")
+      #write.csv(data2021,"data2021.csv",row.names=F,fileEncoding="UTF-8")
       #write.csv(data%>%filter(Fixed_Date>as.Date("2021-06-30"),Fixed_Date<=as.Date("2021-09-30")),"data202109.csv",row.names=F,fileEncoding="UTF-8")
       print("coviddata.csvを出力しました")
       # data202106<-
