@@ -264,7 +264,7 @@ repeat{
           rbind(kanagawa5,kanagawa3)
 
         kana_hozon<-kanagawa3
-        write.csv(kana_hozon,"kanagawa_202112.csv")
+        write.csv(kana_hozon,"kanagawa_202201.csv")
         #write.csv(kana_hozon,"kanagawa_202111.csv")
         #write.csv(kana_hozon,"kanagawa_202110.csv")
         #kanagawa3<-read.csv("kanagawa_202110.csv")[,-1]
@@ -647,7 +647,7 @@ repeat{
         chigasaki3<-
           rbind(chigasaki2,chigasaki3)
         chi_hozon<-chigasaki3
-        write.csv(chi_hozon,"chigasaki_202112.csv")
+        write.csv(chi_hozon,"chigasaki_202201.csv")
         #write.csv(chi_hozon,"chigasaki_202111.csv")
         #chigasaki3<-read.csv("chigasaki_202109.csv")[,-1]
         print("上書きしました")
@@ -1018,7 +1018,8 @@ repeat{
             read.csv("yoko_covid2110.csv"),
             read.csv("yoko_covid2111.csv"),
             read.csv("yoko_covid2112.csv"),
-            read.csv("yoko_covid2201.csv")
+            read.csv("yoko_covid2201.csv"),
+            read.csv("yoko_covid2202.csv")
             )%>%
         mutate(Date=as.Date(Date,format="%Y年%m月%d日"))%>%
         mutate(hos="yokohama")%>%
@@ -1194,6 +1195,7 @@ repeat{
                 read.csv("yoko_covid2111.csv"),
                 read.csv("yoko_covid2112.csv"),
                 read.csv("yoko_covid2201.csv"),
+                read.csv("yoko_covid2202.csv"),
                 read.csv("yoko_covid_today.csv"))%>%
           mutate(Date=as.Date(Date,format="%Y年%m月%d日"))%>%
           filter(Date<"2021-12-08")
@@ -1249,6 +1251,7 @@ repeat{
       if(yoko_html1[1,2]==TRUE){
         yokohama<-
           rbind(
+            read.csv("yokohama202202.csv"),
             read.csv("yokohama202201.csv"),
             read.csv("yokohama202112.csv"),
             read.csv("yokohama202111.csv"),
@@ -1268,6 +1271,7 @@ repeat{
       }else{
         yokohama<-
           rbind(
+            read.csv("yokohama202202.csv"),
             read.csv("yokohama202201.csv"),
             read.csv("yokohama202112.csv"),
             read.csv("yokohama202111.csv"),
@@ -1536,6 +1540,7 @@ repeat{
                 read.csv("sagamihara202111.csv"),
                 read.csv("sagamihara202112.csv"),
                 read.csv("sagamihara202201.csv"),
+                read.csv("sagamihara202202.csv"),
                 read.csv("sagamiharatoday.csv")
                 )%>%
               arrange(Date)%>%
@@ -1557,7 +1562,8 @@ repeat{
                 read.csv("sagamihara202110.csv"),
                 read.csv("sagamihara202111.csv"),
                 read.csv("sagamihara202112.csv"),
-                read.csv("sagamihara202201.csv")
+                read.csv("sagamihara202201.csv"),
+                read.csv("sagamihara202202.csv")
               )%>%
               arrange(Date)%>%
               distinct(No,.keep_all = T)%>%
@@ -1579,7 +1585,8 @@ repeat{
                 read.csv("sagamihara202110.csv"),
                 read.csv("sagamihara202111.csv"),
                 read.csv("sagamihara202112.csv"),
-                read.csv("sagamihara202201.csv")
+                read.csv("sagamihara202201.csv"),
+                read.csv("sagamihara202202.csv")
                 )%>%
               arrange(Date)%>%
               distinct(No,.keep_all = T)%>%
@@ -1607,6 +1614,7 @@ repeat{
                 read.csv("sagamihara202110.csv"),
                 read.csv("sagamihara202111.csv"),
                 read.csv("sagamihara202112.csv"),
+                read.csv("sagamihara202201.csv"),
                 read.csv("sagamiharatoday.csv")
               )%>%
               arrange(Date)%>%
@@ -1628,7 +1636,8 @@ repeat{
                 read.csv("sagamihara202109.csv"),
                 read.csv("sagamihara202110.csv"),
                 read.csv("sagamihara202111.csv"),
-                read.csv("sagamihara202112.csv")
+                read.csv("sagamihara202112.csv"),
+                read.csv("sagamihara202201.csv"),
                 )%>%
               arrange(Date)%>%
               distinct(No,.keep_all = T)%>%
