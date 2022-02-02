@@ -199,11 +199,11 @@ repeat{
         at<-attr(re,"match.length")
         res5$n[n]=as.numeric(substring(tds,re,re+at-1))
         
-        re<-regexpr("[[:digit:]]{2,3} (代|歳未満)",tds)
+        re<-regexpr("[[:digit:]]{2,3} ??(代|歳未満|歳以上)",tds)
         at<-attr(re,"match.length")
         res5$年代[n]=substring(tds,re,re+at-1)
         if(res5$年代[n]==""){
-          re<-regexpr("100 ??歳以",tds2)
+          re<-regexpr("100 ??歳以??上??",tds2)
           at<-attr(re,"match.length")
           res5$年代[n]=substring(tds2,re,re+at-1)
         }
@@ -227,6 +227,7 @@ repeat{
       res5<-
         res5%>%
         mutate(年代=str_replace_all(年代,"10 ??歳未満","0-10"))%>%
+        mutate(年代=str_remove_all(年代,"歳以上| "))%>%
         mutate(年代=str_remove_all(年代,"代|歳未満|歳以| "))%>%
         mutate(判明日=str_remove_all(判明日," "))%>%
         filter(年代!="")
@@ -437,7 +438,8 @@ repeat{
               read.csv("kawasaki202109.csv"),
               read.csv("kawasaki202110.csv"),
               read.csv("kawasaki202111.csv"),
-              read.csv("kawasaki2112.csv"))%>%
+              read.csv("kawasaki2112.csv"),
+              read.csv("kawasaki2201.csv"))%>%
         rename("list"="居住地","Fixed_Date2"="確定日",
                "Residential_City"="居住市区町村",
                "Residential_Pref"="居住都道府県",
@@ -677,8 +679,15 @@ repeat{
         html_attr("href") %>%
         data.frame() %>%
         rename(html=".") %>%
-        filter(grepl(paste0("nagekomi/",D1),html))
-      
+        filter(grepl(paste0("nagekomi/",D1),html))%>%
+        distinct()
+      D2<-format(Sys.Date(),"%Y%m%d")
+      file<-paste0("/3130/nagekomi/",D2,".html")
+      if(nrow(Ahref)==0){
+        Ahref<-data.frame(html=file)
+      }else if(Ahref[1,1]!=file){
+        Ahref<-rbind(file,Ahref)
+      }
       Ahref2<-cbind(HTML %>%
         html_nodes("a") %>%
         html_attr("href") %>%
@@ -742,7 +751,9 @@ repeat{
           select(Date,No,性別,年代,職業等,患者確定日)%>%
           mutate(No=as.numeric(No))%>%
           arrange(Date,No)
-        TD2$No<-seq(7095,7095+nrow(TD2)-1)
+        #TD2$No<-seq(7095,7095+nrow(TD2)-1)
+        TD2<-TD2%>%
+          mutate(No=ifelse(Date=="2022年1月21日",seq(7369,7490),No))
         Table <-
         HTML %>%
         html_table() %>%
@@ -751,6 +762,7 @@ repeat{
         rename(No="No.") %>%
         mutate(No=as.numeric(No))
       TD <- data.frame()
+
       for (i in 1:nrow(Ahref)) {
         
         while(TRUE){
@@ -828,6 +840,9 @@ repeat{
         
      
       }
+      TDS<-
+        rbind(TDS,data.frame(Date="20220126",No=8275,Sex="男性",Age="10歳未満",City="横須賀市",同居人="調査中",
+                 感染経路="調査中",現在の症状="不明",Hos=""))
       
       te <-
         TDS %>%
@@ -838,6 +853,7 @@ repeat{
         mutate(Hos="横須賀") %>%
         mutate(Date=as.Date(Date,format="%Y%m%d")) %>%
         arrange(desc(Date),desc(No))
+
       
       
       TDS3 <-
@@ -845,7 +861,8 @@ repeat{
         select(No,患者確定日,年代,性別,職業等)%>%
         rbind(TD2%>%select(-Date))%>%
         full_join(TDS2)%>%
-        filter(!is.na(年代))
+        filter(!is.na(Age))%>%
+        filter(Date>=as.Date(paste0(D1,"01"),"%Y%m%d"))
       
        #write.csv(TDS3,"yokosuka_202107.csv",row.names = F)
       #write.csv(TDS3,"yokosuka_202108.csv",row.names = F)
@@ -863,7 +880,8 @@ repeat{
         read.csv("yokosuka_202110.csv"),
         read.csv("yokosuka_202111.csv"),
         read.csv("yokosuka_202112.csv"),
-        read.csv("yokosuka_202201.csv")
+        read.csv("yokosuka_202201.csv"),
+        read.csv("yokosuka_202202.csv")
       )%>%
         filter(!is.na(No))%>%
         rename("PR_Date"="Date","Fixed_Date2"="患者確定日")%>%
@@ -1079,7 +1097,12 @@ repeat{
           "/city-info/koho-kocho/press/kenko/2021/0107covi--19.html"
         yoko_html1[1,2]<-TRUE
       }
-  
+      if(Date=="0131"){
+        yoko_html1[1,1]<-
+          "/city-info/koho-kocho/press/kenko/2021/0131covid-19.html"
+        yoko_html1[1,2]<-TRUE
+      }
+      
       if(yoko_html1[1,2]==TRUE){
         while(TRUE){
           yoko_pdf<-try(read_html(paste0("https://www.city.yokohama.lg.jp",yoko_html1[1,1]))%>%
@@ -1320,8 +1343,8 @@ repeat{
       TD <-
         TD %>%
         mutate(Text2=stri_trans_nfkc(Text))
-      
-      sr=which(grepl("男性|女性|男児|女児",TD$Text2))
+      sr=which(grepl("^ *[[:digit:]]+ ",TD$Text2))
+      #sr=which(grepl("男性|女性|男児|女児",TD$Text2))
       hoken=c("平塚","鎌倉","小田原","厚木")
       n=1
       TDS <- data.frame(Date="",No=1:length(sr),Age="",Gender="",Hos="",City="")
@@ -1345,7 +1368,10 @@ repeat{
         at<-attr(re,"match.length")
         TDS$Gender[n]=substring(tds,re,re+at-1)
         
-        re<-regexpr("[^ ]+[市区町村都県] |[^ ]+[内外]) |県外 ",tds)
+        re<-regexpr("[^ ]+[市区町村都県郡] |[^ ]+[内外]) |県外 ",tds)
+        if(re==-1){
+          re<-regexpr("調査中 ",tds)
+        }
         at<-attr(re,"match.length")
         TDS$City[n]=substring(tds,re,re+at-2)
         
@@ -1431,8 +1457,9 @@ repeat{
           TD %>%
           mutate(Text2=stri_trans_nfkc(Text))
         
-         sr=which(grepl("男性|女性|男児|女児",TD$Text2))
-        hoken=c("平塚","鎌倉","小田原","厚木")
+         #sr=which(grepl("男性|女性|男児|女児",TD$Text2))
+         sr=which(grepl("^ *[[:digit:]]+ ",TD$Text2))
+       # hoken=c("平塚","鎌倉","小田原","厚木")
         n=1
         TDS <- data.frame(Date="",No=1:length(sr),Age="",Gender="",Hos="",City="")
         for (n in 1:length(sr)) {
@@ -1454,7 +1481,10 @@ repeat{
           at<-attr(re,"match.length")
           TDS$Gender[n]=substring(tds,re,re+at-1)
           
-          re<-regexpr("[^ ]+[市区町村都県] |[^ ]+[内外]) |県外 ",tds)
+          re<-regexpr("[^ ]+[市区町村都県郡] |[^ ]+[内外]) |県外 ",tds)
+          if(re==-1){
+            re<-regexpr("調査中 ",tds)
+          }
           print(TDS$No[n])
           print(tds)
           print(n)
@@ -1655,63 +1685,154 @@ repeat{
       TD <-
         TD %>%
         mutate(Text2=stri_trans_nfkc(Text))
-      
-      sr=which(grepl("男性|女性|男児|女児",TD$Text2))
-      day=which(grepl("202.年.+月.+日",TD$Text2))
-
-      day<-day[-43]
-
+      #空白までの文字を拾う
+      sr=which(grepl("^ {0,1}[[:digit:]]+ ",TD$Text2))
       n=1
-      TDS <- data.frame(Date="",No=1:length(sr),Age="",Gender="",Hos="",City="")
-      d=1
-      
+      TDS <- data.frame(Date="",No=1:length(sr),Age="",Gender="",Hos="",City="",Jobs="",no="")
       for (n in 1:length(sr)) {
-        tds <- paste0(TD$Text2[sr[n]],collapse = " ")
+        # for (n in 413:430) {
+        (tds <- paste0(TD$Text2[sr[n]],collapse = " "))
         
-        re<-regexpr("^[[:digit:]]+ |^ [[:digit:]] ",tds)
+        re<-regexpr("  +",tds)
         at<-attr(re,"match.length")
-        TDS$No[n]=as.numeric(substring(tds,re,re+at-1))
+        TDS$No[n]=as.numeric(substring(tds,1,re-1))
+        tds <- substring(tds,re+at,nchar(tds))
         
-        re<-regexpr("[[:digit:]]{2,3}[代歳]|.学生|..学児",tds)
-        at<-attr(re,"match.length")
-        TDS$Age[n]=substring(tds,re,re+at-1)
-        
-        TDS$no[n] <- as.numeric(substring(tds,re-7,re-1))
-        #4481欠番no2332
-        #6571欠番
-        #7056欠番
-        #7071欠番
-        #7066欠番
-        #7067欠番
-        if(n>1)
-          if(TDS$no[n]==1|sr[n]-sr[n-1]>5|TDS$No[n]==4482|TDS$No[n]==6572|TDS$No[n]==7057|
-             TDS$No[n]==7072|TDS$No[n]==7067|TDS$No[n]==7068|TDS$No[n]==7162) #1番または改ページ
-            d=d+1
-        re<-regexpr("202.年.+月.+日",TD$Text2[day[d]])
-        at<-attr(re,"match.length")
-        TDS$Date[n]=substring(TD$Text2[day[d]],re,re+at-1)
-        if(!is.na(TDS$Date[n])){
-          a<-substring(TD$Text2[day[d]],re,re+at-1)
-        }else{
-          TDS$Date[n]=a
+        #日付がある行
+        if(at<7){
+          re<-regexpr(" +",tds)
+          at<-attr(re,"match.length")
+          TDS$Date[n]=(substring(tds,1,re-1))
+          tds <- substring(tds,re+at,nchar(tds))
         }
         
-        re<-regexpr("男性|女性|男児|女児",tds)
+        re<-regexpr(" +",tds)
         at<-attr(re,"match.length")
-        TDS$Gender[n]=substring(tds,re,re+at-1)
+        TDS$no[n]=as.numeric(substring(tds,1,re-1))
+        tds <- substring(tds,re+at,nchar(tds))
         
-        re<-regexpr("[^ ]+[市区町村都]|[^ ]+[内外]",tds)
+        re<-regexpr(" +",tds)
         at<-attr(re,"match.length")
-        TDS$City[n]=substring(tds,re,re+at-1)
+        TDS$Age[n]=(substring(tds,1,re-1))
+        tds <- substring(tds,re+at,nchar(tds))
         
+        re<-regexpr(" +",tds)
+        at<-attr(re,"match.length")
+        TDS$Gender[n]=(substring(tds,1,re-1))
+        tds <- substring(tds,re+at,nchar(tds))
+        
+        re<-regexpr(" +",tds)
+        at<-attr(re,"match.length")
+        TDS$City[n]=(substring(tds,1,re-1))
+        tds <- substring(tds,re+at,nchar(tds))
+        
+        re<-regexpr(" +",tds)
+        at<-attr(re,"match.length")
+        TDS$Jobs[n]=(substring(tds,1,re-1))
+        if(re<0)
+          TDS$Jobs[n]=tds
+        tds <- substring(tds,re+at,nchar(tds))
+        
+        print(c(n,TDS$No[n],TDS$Date[n]))
       }
+      TDS <-
+        TDS %>%
+        mutate(no=as.numeric(no))
+      
+      #日番号(no)がNAのところに次の値-1を入れる　NAがなくなるまで
+      kb=which(is.na(TDS$no))
+      while(length(kb)>0){
+        for (n in kb) {
+          TDS$no[n]=TDS$no[n+1]-1
+        }
+        kb=which(is.na(TDS$no))
+      }
+      day=which(grepl("202.年.+月.+日",TD$Text2))
+      re<-regexpr("202.年.+月.+日",TD$Text2[day])
+      at<-attr(re,"match.length")
+      dayl= unique(substring(TD$Text2[day],re,re+at-1))
+      n=1
+      d=1
+      TDS$Date[n]=dayl[d]
+      #基本的に日番号=1のときに日付ずらす
+      #既に入っている日付とずれたときはずらす
+      for (n in 2:length(sr)) {
+        dn=TDS$no[n]
+        dt=TDS$Date[n]
+        
+        if(dn==1|(dt!=""&dt!=dayl[d])){ 
+          d=d+1
+        }
+        TDS$Date[n]=dayl[d]
+        print(c(n,TDS$No[n],TDS$Date[n]))
+      }
+      
+      # sr=which(grepl("男性|女性|男児|女児",TD$Text2))
+      # #sr=which(grepl("^[[:digit:]]+ ",TD$Text2))
+      # day=which(grepl("202.年.+月.+日",TD$Text2))
+      # 
+      # day<-day[-43]
+      # 
+      # n=1
+      # TDS <- data.frame(Date="",No=1:length(sr),Age="",Gender="",Hos="",City="")
+      # d=1
+      # 
+      # for (n in 1:length(sr)) {
+      #   tds <- paste0(TD$Text2[sr[n]],collapse = " ")
+      #   
+      #   re<-regexpr("^[[:digit:]]+ |^ [[:digit:]] ",tds)
+      #   at<-attr(re,"match.length")
+      #   TDS$No[n]=as.numeric(substring(tds,re,re+at-1))
+      #   
+      #   re<-regexpr("[[:digit:]]{2,3}[代歳]|.学生|..学児",tds)
+      #   at<-attr(re,"match.length")
+      #   TDS$Age[n]=substring(tds,re,re+at-1)
+      #   
+      #   TDS$no[n] <- as.numeric(substring(tds,re-7,re-1))
+      #   #4481欠番no2332
+      #   #6571欠番
+      #   #7056欠番
+      #   #7071欠番
+      #   #7066欠番
+      #   #7067欠番
+      #   #8060欠番
+      #   #8125欠番
+      #   # re<-regexpr("欠番",tds)
+      #   # if(re!=-1)TDS$no[n] <- "欠番"
+      #   # if(n>1)
+      #   #   if(TDS$no[n]==1|sr[n]-sr[n-1]>5|TDS$No[n]==7162) #1番または改ページ
+      #   if(n>1)
+      #     if(TDS$no[n]==1|sr[n]-sr[n-1]>5|TDS$No[n]==4482|TDS$No[n]==6572|TDS$No[n]==7057|
+      #        TDS$No[n]==7072|TDS$No[n]==7067|TDS$No[n]==7068|TDS$No[n]==7162#|
+      #        #TDS$No[n]==8061|TDS$No[n]==8125
+      #        ) #1番または改ページ
+      #       d=d+1
+      #   re<-regexpr("202.年.+月.+日",TD$Text2[day[d]])
+      #   at<-attr(re,"match.length")
+      #   TDS$Date[n]=substring(TD$Text2[day[d]],re,re+at-1)
+      #   # if(!is.na(TDS$Date[n])){
+      #   #   a<-substring(TD$Text2[day[d]],re,re+at-1)
+      #   # }else{
+      #   #   TDS$Date[n]=a
+      #   # }
+      # 
+      #   re<-regexpr("男性|女性|男児|女児",tds)
+      #   at<-attr(re,"match.length")
+      #   TDS$Gender[n]=substring(tds,re,re+at-1)
+      #   
+      #   re<-regexpr("[^ ]+[市区町村都]|[^ ]+[内外]",tds)
+      #   at<-attr(re,"match.length")
+      #   TDS$City[n]=substring(tds,re,re+at-1)
+      #   
+      # }
       
       
       TDS2 <-
         TDS %>%
         mutate(Hos="藤沢") %>%
         mutate(Date=as.Date(Date,format="%Y年%m月%d日")) %>%
-        arrange(desc(No),desc(Date))
+        arrange(desc(No),desc(Date))%>%
+        select(Date,No,Age,Gender,Hos,City,no)
       
       
       #write.csv(TDS2,"fujisawa202104.csv",row.names = F)
@@ -1848,6 +1969,7 @@ repeat{
       Date<-str_remove(Date,"2021-|2022-")%>%
         str_replace("-","月")%>%
         str_replace_all("01","1")%>%
+        str_replace_all("02","2")%>%
         str_replace_all("月0","月")
       Date<-paste0("\\(",Date)
       HTML2<-cbind(TEXT,URL)%>%
