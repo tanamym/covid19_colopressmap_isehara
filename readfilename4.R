@@ -646,6 +646,9 @@ repeat{
       if(html_top2!=html_top[1,]){
         chigasaki3<-
           rbind(chigasaki2,chigasaki3)
+        chigasaki3<-
+          chigasaki3%>%
+          filter(Fixed_Date<Sys.Date()-1)
         chi_hozon<-chigasaki3
         write.csv(chi_hozon,"chigasaki_202201.csv")
         #write.csv(chi_hozon,"chigasaki_202111.csv")
@@ -683,11 +686,17 @@ repeat{
         distinct()
       D2<-format(Sys.Date(),"%Y%m%d")
       file<-paste0("/3130/nagekomi/",D2,".html")
-      if(nrow(Ahref)==0){
+      HT<-read_html(paste0("https://www.city.yokosuka.kanagawa.jp",
+                       file))%>%
+        html_table() 
+      if(length(HT)!=0){
+         if(nrow(Ahref)==0){
         Ahref<-data.frame(html=file)
       }else if(Ahref[1,1]!=file){
         Ahref<-rbind(file,Ahref)
       }
+      }
+     
       Ahref2<-cbind(HTML %>%
         html_nodes("a") %>%
         html_attr("href") %>%
