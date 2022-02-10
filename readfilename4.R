@@ -461,7 +461,8 @@ repeat{
       #茅ヶ崎市####
       
       url_top3<-
-        "https://www.city.chigasaki.kanagawa.jp/koho/1030702/1038773/index.html"
+        "https://www.city.chigasaki.kanagawa.jp/koho/1030702/1002784/index.html"
+        #"https://www.city.chigasaki.kanagawa.jp/koho/1030702/1038773/index.html"
       while(TRUE){
         rhtml_top3<-try(rvest::read_html(url_top3,encoding="UTF-8"))
         if(class(rhtml_top3) != "try-error")break
@@ -473,11 +474,21 @@ repeat{
         html_nodes("a")%>%
         html_attr("href")%>%#urlの抽出
         as.data.frame()%>%
-        filter(str_detect(.,"html"))%>%
-        filter(str_detect(.,"1038773"))%>%
         rename("html"=".")%>%
+        cbind(rhtml_top3%>%
+        html_nodes("a")%>%
+        html_text()%>%
+        as.data.frame())%>%
+        rename("name"=".")%>%
+        filter(str_detect(html,"html"))%>%
+        #filter(str_detect(.,"1038773"))%>%
+        filter(str_detect(html,"1002784"))%>%
         mutate(html=str_remove(html,"../../../"))%>%
-        mutate(html=paste0("https://www.city.chigasaki.kanagawa.jp/",html))
+        mutate(html=paste0("https://www.city.chigasaki.kanagawa.jp/",html))%>%
+        filter(str_detect(name,"新型コロナウイルス感染症による新たな管内の患者確認"))
+      # if(Sys.Date()=="2022-02-09"){
+      #   html_top4[1,1]<-"https://www.city.chigasaki.kanagawa.jp/kenko/1022933/1038284.html"
+      # }
       while (TRUE) {
         rhtml4<-try(rvest::read_html(html_top4[1,1],encoding="UTF-8")%>%
                       html_nodes("a")%>%
@@ -555,7 +566,6 @@ repeat{
         k1=1
         k2=nrow(chi_pref)
         for (k in k1:k2) {#1月
-          
           if(k==k1){
             #データフレームを初期化
             chi4 <-data.frame()
@@ -582,6 +592,10 @@ repeat{
                  pdate=str_replace_all(pdate,"年","-"))
           if(k==1&date_chi[1,2]<Sys.Date()&str_detect(rhtml4[1,1],D)){
             path2<-rhtml4[1,1]
+            
+            # if(Sys.Date()=="2022-02-09"){
+            #   path2<-"https://www.city.chigasaki.kanagawa.jp/_res/projects/default_project/_page_/001/038/284/0209corona.pdf"
+            # }
             chi2<-pdf_text(path2)
             date_chi2<-
               chi2[1]%>%
@@ -689,13 +703,23 @@ repeat{
         distinct()
       D2<-format(Sys.Date(),"%Y%m%d")
       file<-paste0("/3130/nagekomi/",D2,".html")
-      HT<-read_html(paste0("https://www.city.yokosuka.kanagawa.jp",
-                       file))%>%
-        html_nodes("div") %>%
-        html_text() %>%
-        data.frame() %>%
-        rename(Text=".") %>%
-        filter(grepl("^\n+新型コロナウイルス感染症による市内の患者確認",Text))
+      while(TRUE){
+         HT<-try(read_html(paste0("https://www.city.yokosuka.kanagawa.jp",
+                       file)))
+         if(class(HT) != "try-error"){
+           HT<-
+             HT%>%
+             html_nodes("div") %>%
+             html_text() %>%
+             data.frame() %>%
+             rename(Text=".") %>%
+             filter(grepl("^\n+新型コロナウイルス感染症による市内の患者確認",Text))
+         }else{HT<-0}
+         break
+      }
+     
+      
+      
       if(length(HT)!=0){
          if(nrow(Ahref)==0){
         Ahref<-data.frame(html=file)
@@ -878,7 +902,8 @@ repeat{
         rbind(TD2%>%select(-Date))%>%
         full_join(TDS2)%>%
         filter(!is.na(Age))%>%
-        filter(Date>=as.Date(paste0(D1,"01"),"%Y%m%d"))
+        filter(Date>=as.Date(paste0(D1,"01"),"%Y%m%d"))%>%
+        filter(No>1000)
       
        #write.csv(TDS3,"yokosuka_202107.csv",row.names = F)
       #write.csv(TDS3,"yokosuka_202108.csv",row.names = F)
@@ -1119,7 +1144,11 @@ repeat{
           "/city-info/koho-kocho/press/kenko/2021/0131covid-19.html"
         yoko_html1[1,2]<-TRUE
       }
-      
+      # if(Date=="0209"){
+      #   yoko_html1[1,1]<-
+      #     "/city-info/koho-kocho/press/kenko/2021/0209covid-19.html"
+      #   yoko_html1[1,2]<-TRUE
+      # }
       if(yoko_html1[1,2]==TRUE){
         while(TRUE){
           yoko_pdf<-try(read_html(paste0("https://www.city.yokohama.lg.jp",yoko_html1[1,1]))%>%
