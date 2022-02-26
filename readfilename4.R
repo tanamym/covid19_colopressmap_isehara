@@ -206,6 +206,11 @@ repeat{
           re<-regexpr("100 ??歳以??上??",tds2)
           at<-attr(re,"match.length")
           res5$年代[n]=substring(tds2,re,re+at-1)
+          if(res5$年代[n]==""){ 
+            re<-regexpr("非公表",tds)
+            at<-attr(re,"match.length")
+            res5$年代[n]=substring(tds,re,re+at-1)}
+          
         }
         re<-regexpr("男性|女性",tds)
         at<-attr(re,"match.length")
@@ -489,14 +494,26 @@ repeat{
       # if(Sys.Date()=="2022-02-09"){
       #   html_top4[1,1]<-"https://www.city.chigasaki.kanagawa.jp/kenko/1022933/1038284.html"
       # }
+      
+      # while (TRUE) {
+      #   rhtml4<-try(rvest::read_html(html_top4[1,1],encoding="UTF-8")%>%
+      #                 html_nodes("a")%>%
+      #                 html_attr("href")%>%
+      #                 as.data.frame()%>%
+      #                 filter(str_detect(.,"default_project"))%>%
+      #                 rename("html"=".")%>%
+      #                 mutate(html=str_remove(html,"../../../"))%>%
+      #                 mutate(html=paste0("https://www.city.chigasaki.kanagawa.jp/",html)))
+      #   if(class(rhtml4) != "try-error")break
+      # }
       while (TRUE) {
-        rhtml4<-try(rvest::read_html(html_top4[1,1],encoding="UTF-8")%>%
+        rhtml4<-try(rvest::read_html("https://www.city.chigasaki.kanagawa.jp/kenko/1022933/1038284.html",encoding="UTF-8")%>%
                       html_nodes("a")%>%
                       html_attr("href")%>%
                       as.data.frame()%>%
                       filter(str_detect(.,"default_project"))%>%
                       rename("html"=".")%>%
-                      mutate(html=str_remove(html,"../../../"))%>%
+                      mutate(html=str_remove(html,"../../"))%>%
                       mutate(html=paste0("https://www.city.chigasaki.kanagawa.jp/",html)))
         if(class(rhtml4) != "try-error")break
       }
@@ -1174,7 +1191,6 @@ repeat{
           yoko_pdf[1,2]="https://www.city.yokohama.lg.jp/city-info/koho-kocho/press/kenko/2020/030913covid-19.files/030913covid-19.pdf"
         }
         pdf<-pdf_text(yoko_pdf[1,2])
-        pdf_fonts(yoko_pdf[1,2])
         if(pdf[1]=="")print(paste("ファイル名:",yoko_pdf[1,2],"を取得出来ません"))
         re<-regexpr("令和.+日\n",pdf[[1]])
         at<-attr(re,"match.length")
@@ -1811,8 +1827,8 @@ repeat{
         }
         kb=which(is.na(TDS$no))
       }
-      day=which(grepl("202.年.+月.+日",TD$Text2))
-      re<-regexpr("202.年.+月.+日",TD$Text2[day])
+      day=which(grepl("202.年..??月..??日",TD$Text2))
+      re<-regexpr("202.年..??月..??日",TD$Text2[day])
       at<-attr(re,"match.length")
       dayl= unique(substring(TD$Text2[day],re,re+at-1))
       n=1
@@ -1827,6 +1843,9 @@ repeat{
         if(dn==1|(dt!=""&dt!=dayl[d])){ 
           d=d+1
         }
+        # if(TDS$Date[n-1]=="2022年2月15日"&TDS$no[n-1]==287){
+        #   stop()
+        # }
         TDS$Date[n]=dayl[d]
         print(c(n,TDS$No[n],TDS$Date[n]))
       }
@@ -2167,7 +2186,53 @@ repeat{
                PR_Date=as.Date(PR_Date),
                Hos="横浜",hos="yokohama")%>%
         mutate(note=str_remove(note,"区"))
-      data<-bind_rows(data2,data3,kanagawa2,kawasaki,chigasaki,yokohama0220)%>%
+      if(nrow(yokohama%>%
+        filter(PR_Date==Sys.Date()))==0){
+        while (TRUE) {
+          yo<-try(fread("https://www.city.yokohama.lg.jp/kurashi/kenko-iryo/yobosesshu/kansensho/coronavirus/corona-data.files/141003_yokohama_covid19_patients.csv",
+              encoding="UTF-8")%>%
+          data.frame()%>%
+            mutate(記者発表日=as.Date(記者発表日))%>%
+          filter(記者発表日==Sys.Date()))
+          if(class(yo) != "try-error")break
+        }
+        
+        if(nrow(yo)!=0){
+          yo<-yo%>%
+            rename("Residential_City"="市町村名",
+                   "Fixed_Date"="記者発表日",
+                   "Age"="年代",
+                   "Sex"="性別",
+                   "note"="住所地",
+                   "Residential_Pref"="都道府県名",
+                   )%>%
+            mutate(PR_Date=Fixed_Date,
+                   Hos="横浜",
+                   hos="yokohama",
+                   X="",
+                   Y="",
+                   Hospital_Pref="神奈川県",
+                   Fixed_Date2="")%>%
+            select(Residential_Pref,Residential_City,Fixed_Date,Age,Sex,note,
+                   PR_Date,Fixed_Date2,Hos,hos,Hospital_Pref,X,Y)%>%
+            mutate(note=str_remove(note,"区"))
+          write.csv(yo,paste0("yoko/yokohama",Sys.Date(),".csv"),row.names = F)
+        }
+      }
+      yo_list<-list.files("C:/data/covid/yoko",full.names = T)
+      yo2<-do.call(rbind,lapply(yo_list,read.csv))%>%
+        mutate(Fixed_Date2=as.Date(Fixed_Date2),
+               Hospital_Pref=as.character(Hospital_Pref),
+               Residential_Pref=as.character(Residential_Pref),
+               Residential_City=as.character(Residential_City),
+               Age=as.character(Age),
+               Sex=as.character(Sex),
+               PR_Date=as.Date(PR_Date),
+               Fixed_Date=as.Date(Fixed_Date),
+               Hos=as.character(Hos),
+               hos=as.character(hos),
+               note=as.character(note))
+      data<-bind_rows(data2,data3,kanagawa2,kawasaki,chigasaki,yokohama0220,yo2)%>%
         select(Fixed_Date,Hospital_Pref,Residential_City,Age,
                Sex,X,Y,PR_Date,Fixed_Date2,Hos,note,hos)%>%
         filter(Fixed_Date<Sys.Date())%>%
@@ -2188,7 +2253,7 @@ repeat{
         data%>%
         filter(Fixed_Date>=as.Date("2022-02-16"))
       if(format(Sys.time(),"%H")%in%c("17","18","19","20","21")){
-        data<-bind_rows(data2,data3,kanagawa2,kawasaki,chigasaki,yokohama0220)%>%
+        data<-bind_rows(data2,data3,kanagawa2,kawasaki,chigasaki,yokohama0220,yo2)%>%
           select(Fixed_Date,Hospital_Pref,Residential_City,Age,
                  Sex,X,Y,PR_Date,Fixed_Date2,Hos,note,hos)%>%
           mutate(Age=str_remove(Age,"代"),
