@@ -465,32 +465,32 @@ repeat{
       
       #茅ヶ崎市####
       
-      url_top3<-
-        "https://www.city.chigasaki.kanagawa.jp/koho/1030702/1002784/index.html"
-        #"https://www.city.chigasaki.kanagawa.jp/koho/1030702/1038773/index.html"
-      while(TRUE){
-        rhtml_top3<-try(rvest::read_html(url_top3,encoding="UTF-8"))
-        if(class(rhtml_top3) != "try-error")break
-      }
+      # url_top3<-
+      #   "https://www.city.chigasaki.kanagawa.jp/koho/1030702/1002784/index.html"
+      #   #"https://www.city.chigasaki.kanagawa.jp/koho/1030702/1038773/index.html"
+      # while(TRUE){
+      #   rhtml_top3<-try(rvest::read_html(url_top3,encoding="UTF-8"))
+      #   if(class(rhtml_top3) != "try-error")break
+      # }
+      # 
       
-      
-      html_top4<-
-        rhtml_top3%>%
-        html_nodes("a")%>%
-        html_attr("href")%>%#urlの抽出
-        as.data.frame()%>%
-        rename("html"=".")%>%
-        cbind(rhtml_top3%>%
-        html_nodes("a")%>%
-        html_text()%>%
-        as.data.frame())%>%
-        rename("name"=".")%>%
-        filter(str_detect(html,"html"))%>%
-        #filter(str_detect(.,"1038773"))%>%
-        filter(str_detect(html,"1002784"))%>%
-        mutate(html=str_remove(html,"../../../"))%>%
-        mutate(html=paste0("https://www.city.chigasaki.kanagawa.jp/",html))%>%
-        filter(str_detect(name,"新型コロナウイルス感染症による新たな管内の患者確認"))
+      # html_top4<-
+      #   rhtml_top3%>%
+      #   html_nodes("a")%>%
+      #   html_attr("href")%>%#urlの抽出
+      #   as.data.frame()%>%
+      #   rename("html"=".")%>%
+      #   cbind(rhtml_top3%>%
+      #   html_nodes("a")%>%
+      #   html_text()%>%
+      #   as.data.frame())%>%
+      #   rename("name"=".")%>%
+      #   filter(str_detect(html,"html"))%>%
+      #   #filter(str_detect(.,"1038773"))%>%
+      #   filter(str_detect(html,"1002784"))%>%
+      #   mutate(html=str_remove(html,"../../../"))%>%
+      #   mutate(html=paste0("https://www.city.chigasaki.kanagawa.jp/",html))%>%
+      #   filter(str_detect(name,"新型コロナウイルス感染症による新たな管内の患者確認"))
       # if(Sys.Date()=="2022-02-09"){
       #   html_top4[1,1]<-"https://www.city.chigasaki.kanagawa.jp/kenko/1022933/1038284.html"
       # }
@@ -983,15 +983,15 @@ repeat{
         pdf_pref%>%
         filter(grepl("yokohama.pdf$",pdf))
       TD <- data.frame()
-      TD2 <- data.frame()
+      #TD2 <- data.frame()
       for (p in Yokohama$pdf) {
         path2<-paste0("https://www.pref.kanagawa.jp",p)
-        if(p=="/documents/77029/20210702_yokohama.pdf"){
-          path2<-"https://www.city.yokohama.lg.jp/city-info/koho-kocho/press/kenko/2021/0702covid-19.files/0001_20210702.pdf"
-        }
-        if(p=="/documents/78017/202108071_yokohama.pdf"){
-          path2<-"https://www.city.yokohama.lg.jp/city-info/koho-kocho/press/kenko/2021/0807covid-19.files/0807covid-19.pdf"
-        }
+        # if(p=="/documents/77029/20210702_yokohama.pdf"){
+        #   path2<-"https://www.city.yokohama.lg.jp/city-info/koho-kocho/press/kenko/2021/0702covid-19.files/0001_20210702.pdf"
+        # }
+        # if(p=="/documents/78017/202108071_yokohama.pdf"){
+        #   path2<-"https://www.city.yokohama.lg.jp/city-info/koho-kocho/press/kenko/2021/0807covid-19.files/0807covid-19.pdf"
+        # }
         pdf<-pdf_text(path2)
         if(pdf[1]=="")print(paste("ファイル名:",path2,"を取得出来ません"))
         re<-regexpr("令和.+日\n",pdf[[1]])
@@ -1007,9 +1007,9 @@ repeat{
           mutate(Date=gsub("令和2年","2020年",Date)) %>%
           mutate(Date=gsub("日.+","日",Date))
         colnames(td)[1] <- "Text"
-        TD2 <-
-          TD2%>%
-          rbind(td)
+        # TD2 <-
+        #   TD2%>%
+        #   rbind(td)
           
         for (l in 2:length(pdf)) {
           td <-
@@ -1037,53 +1037,53 @@ repeat{
         mutate(Text2=gsub("\u2ec4","西",Text2))%>%
         mutate(Text2=gsub("\u6236塚","戸塚",Text2))%>%
         mutate(Text2=gsub("\u2ed8葉","青葉",Text2))
-      TD2 <-
-        TD2 %>%
-        mutate(Text2=stri_trans_nfkc(Text))
-      sr2=which(grepl("市外.県内",TD2$Text2))
-      TDS2<-
-        data.frame()
-      for (n in 1:length(sr2)) {
-    
-        tds2 <- paste0(TD2$Text2[sr2[n]+1])%>%
-          data.frame()%>%
-          mutate(Date="")
-        colnames(tds2)[1]<-"chr"
-        TDS2<-
-          rbind(TDS2,tds2)
-        TDS2$Date[n]=TD2$Date[sr2[n]]
-      }
-      TDS3<-
-        TDS2%>%
-        mutate(chr=str_replace_all(chr," +","_"),
-               chr=str_remove(chr,"^_"))%>%
-        tidyr::separate(chr,into =c("横浜市","市外(県内)","市外(県外)","市外(都内)","計"),sep ="_")%>%
-        tidyr::pivot_longer(cols=-Date,names_to="City",
-                            values_to = "count")%>%
-        filter(City!="計")
-      if(str_detect(Sys.Date(),"09")){
-        TDS3<-
-          rbind(TDS3,data.frame(Date=c("2021年9月24日","2021年9月24日","2021年9月24日","2021年9月24日"),
-                                City=c("横浜市","市外(県内)","市外(県外)","市外(都内)"),
-                                count=c(93,3,0,1)))
-      }
+      # TD2 <-
+      #   TD2 %>%
+      #   mutate(Text2=stri_trans_nfkc(Text))
+      # sr2=which(grepl("市外.県内",TD2$Text2))
+      # TDS2<-
+      #   data.frame()
+      # for (n in 1:length(sr2)) {
+      # 
+      #   tds2 <- paste0(TD2$Text2[sr2[n]+1])%>%
+      #     data.frame()%>%
+      #     mutate(Date="")
+      #   colnames(tds2)[1]<-"chr"
+      #   TDS2<-
+      #     rbind(TDS2,tds2)
+      #   TDS2$Date[n]=TD2$Date[sr2[n]]
+      # }
+      # TDS3<-
+      #   TDS2%>%
+      #   mutate(chr=str_replace_all(chr," +","_"),
+      #          chr=str_remove(chr,"^_"))%>%
+      #   tidyr::separate(chr,into =c("横浜市","市外(県内)","市外(県外)","市外(都内)","計"),sep ="_")%>%
+      #   tidyr::pivot_longer(cols=-Date,names_to="City",
+      #                       values_to = "count")%>%
+      #   filter(City!="計")
+      # if(str_detect(Sys.Date(),"09")){
+      #   TDS3<-
+      #     rbind(TDS3,data.frame(Date=c("2021年9月24日","2021年9月24日","2021年9月24日","2021年9月24日"),
+      #                           City=c("横浜市","市外(県内)","市外(県外)","市外(都内)"),
+      #                           count=c(93,3,0,1)))
+      # }
       #write.csv(TDS3,"yoko_covid2108.csv",row.names = F)
       #write.csv(TDS3,"yoko_covid2109.csv",row.names = F)
       #write.csv(TDS3,"yoko_covid2110.csv",row.names = F)
-      write.csv(TDS3,paste0("yoko_covid",format(Sys.Date()-1,"%y%m"),".csv"),row.names = F)
-      yoko_covid<-
-        rbind(read.csv("yoko_covid2108.csv"),
-            read.csv("yoko_covid2109.csv"),
-            read.csv("yoko_covid2110.csv"),
-            read.csv("yoko_covid2111.csv"),
-            read.csv("yoko_covid2112.csv"),
-            read.csv("yoko_covid2201.csv"),
-            read.csv("yoko_covid2202.csv")
-            )%>%
-        mutate(Date=as.Date(Date,format="%Y年%m月%d日"))%>%
-        mutate(hos="yokohama")%>%
-        filter(Date<"2021-12-08")
-      write.csv(yoko_covid,"yoko_covid.csv",row.names = F,fileEncoding="UTF-8")
+      #write.csv(TDS3,paste0("yoko_covid",format(Sys.Date()-1,"%y%m"),".csv"),row.names = F)
+      # yoko_covid<-
+      #   rbind(read.csv("yoko_covid2108.csv"),
+      #       read.csv("yoko_covid2109.csv"),
+      #       read.csv("yoko_covid2110.csv"),
+      #       read.csv("yoko_covid2111.csv"),
+      #       read.csv("yoko_covid2112.csv"),
+      #       read.csv("yoko_covid2201.csv"),
+      #       read.csv("yoko_covid2202.csv")
+      #       )%>%
+      #   mutate(Date=as.Date(Date,format="%Y年%m月%d日"))%>%
+      #   mutate(hos="yokohama")%>%
+      #   filter(Date<"2021-12-08")
+      #write.csv(yoko_covid,"yoko_covid.csv",row.names = F,fileEncoding="UTF-8")
       sr=which(grepl("(男|女)|調査中",TD$Text2))
       n=1
       TDS <- data.frame(Date="",No=1:length(sr),Age="",Gender="",Hos="",City="")
@@ -1152,16 +1152,16 @@ repeat{
         
       }
      
-      if(Date=="0107"){
-        yoko_html1[1,1]<-
-          "/city-info/koho-kocho/press/kenko/2021/0107covi--19.html"
-        yoko_html1[1,2]<-TRUE
-      }
-      if(Date=="0131"){
-        yoko_html1[1,1]<-
-          "/city-info/koho-kocho/press/kenko/2021/0131covid-19.html"
-        yoko_html1[1,2]<-TRUE
-      }
+      # if(Date=="0107"){
+      #   yoko_html1[1,1]<-
+      #     "/city-info/koho-kocho/press/kenko/2021/0107covi--19.html"
+      #   yoko_html1[1,2]<-TRUE
+      # }
+      # if(Date=="0131"){
+      #   yoko_html1[1,1]<-
+      #     "/city-info/koho-kocho/press/kenko/2021/0131covid-19.html"
+      #   yoko_html1[1,2]<-TRUE
+      # }
       if(Date=="0212"){
         yoko_html1[1,1]<-
           "/city-info/koho-kocho/press/kenko/2021/2012covid-19.html"
@@ -1186,7 +1186,7 @@ repeat{
           
         
         TD <- data.frame()
-        TD2 <- data.frame()
+        #TD2 <- data.frame()
         if(yoko_pdf[1,2]=="https://www.city.yokohama.lg.jp/city-info/koho-kocho/press/kenko/2021/030913covid-19.files/030913covid-19.pdf"){
           yoko_pdf[1,2]="https://www.city.yokohama.lg.jp/city-info/koho-kocho/press/kenko/2020/030913covid-19.files/030913covid-19.pdf"
         }
@@ -1196,16 +1196,16 @@ repeat{
         at<-attr(re,"match.length")
         d=stri_trans_nfkc(substring(pdf[[1]],re,re+at-2))
         
-        TD2<-
-          pdf[[1]] %>%
-          strsplit("\n") %>%
-          data.frame() %>%
-          mutate(Date=d) %>%
-          mutate(Date=gsub("令和4年","2022年",Date)) %>%
-          mutate(Date=gsub("令和3年","2021年",Date)) %>%
-          mutate(Date=gsub("令和2年","2020年",Date)) %>%
-          mutate(Date=gsub("日.+","日",Date))
-        colnames(TD2)[1] <- "Text"
+        # TD2<-
+        #   pdf[[1]] %>%
+        #   strsplit("\n") %>%
+        #   data.frame() %>%
+        #   mutate(Date=d) %>%
+        #   mutate(Date=gsub("令和4年","2022年",Date)) %>%
+        #   mutate(Date=gsub("令和3年","2021年",Date)) %>%
+        #   mutate(Date=gsub("令和2年","2020年",Date)) %>%
+        #   mutate(Date=gsub("日.+","日",Date))
+        # colnames(TD2)[1] <- "Text"
 
         for (l in 2:length(pdf)) {
           td <-
@@ -1232,42 +1232,42 @@ repeat{
           mutate(Text2=gsub("\u2ec4","西",Text2))%>%
           mutate(Text2=gsub("\u6236塚","戸塚",Text2))%>%
           mutate(Text2=gsub("\u2ed8葉","青葉",Text2))
-        TD2 <-
-          TD2 %>%
-          mutate(Text2=stri_trans_nfkc(Text))
-        sr2=which(grepl("市外.県内",TD2$Text2))
-        TDS2<-
-          data.frame()
-        for (n in 1:length(sr2)) {
-          tds2 <- paste0(TD2$Text2[sr2[n]+1])%>%
-            data.frame()%>%
-            mutate(Date="")
-          colnames(tds2)[1]<-"chr"
-          TDS2<-
-            rbind(TDS2,tds2)
-          TDS2$Date[n]=TD2$Date[sr2[n]]
-        }
-        TDS3<-
-          TDS2%>%
-          mutate(chr=str_replace_all(chr," +","_"),
-                 chr=str_remove(chr,"^_"))%>%
-          tidyr::separate(chr,into =c("横浜市","市外(県内)","市外(県外)","市外(都内)","計"),sep ="_")%>%
-          tidyr::pivot_longer(cols=-Date,names_to="City",
-                              values_to = "count")%>%
-          filter(City!="計")
-        write.csv(TDS3,"yoko_covid_today.csv",row.names = F)
-        yoko_covid<-
-          rbind(read.csv("yoko_covid2108.csv"),
-                read.csv("yoko_covid2109.csv"),
-                read.csv("yoko_covid2110.csv"),
-                read.csv("yoko_covid2111.csv"),
-                read.csv("yoko_covid2112.csv"),
-                read.csv("yoko_covid2201.csv"),
-                read.csv("yoko_covid2202.csv"),
-                read.csv("yoko_covid_today.csv"))%>%
-          mutate(Date=as.Date(Date,format="%Y年%m月%d日"))%>%
-          filter(Date<"2021-12-08")
-        write.csv(yoko_covid,"yoko_covid.csv",row.names = F,fileEncoding="UTF-8")
+        # TD2 <-
+        #   TD2 %>%
+        #   mutate(Text2=stri_trans_nfkc(Text))
+        # sr2=which(grepl("市外.県内",TD2$Text2))
+        # TDS2<-
+        #   data.frame()
+        # for (n in 1:length(sr2)) {
+        #   tds2 <- paste0(TD2$Text2[sr2[n]+1])%>%
+        #     data.frame()%>%
+        #     mutate(Date="")
+        #   colnames(tds2)[1]<-"chr"
+        #   TDS2<-
+        #     rbind(TDS2,tds2)
+        #   TDS2$Date[n]=TD2$Date[sr2[n]]
+        # }
+        # TDS3<-
+        #   TDS2%>%
+        #   mutate(chr=str_replace_all(chr," +","_"),
+        #          chr=str_remove(chr,"^_"))%>%
+        #   tidyr::separate(chr,into =c("横浜市","市外(県内)","市外(県外)","市外(都内)","計"),sep ="_")%>%
+        #   tidyr::pivot_longer(cols=-Date,names_to="City",
+        #                       values_to = "count")%>%
+        #   filter(City!="計")
+        # write.csv(TDS3,"yoko_covid_today.csv",row.names = F)
+        # yoko_covid<-
+        #   rbind(read.csv("yoko_covid2108.csv"),
+        #         read.csv("yoko_covid2109.csv"),
+        #         read.csv("yoko_covid2110.csv"),
+        #         read.csv("yoko_covid2111.csv"),
+        #         read.csv("yoko_covid2112.csv"),
+        #         read.csv("yoko_covid2201.csv"),
+        #         read.csv("yoko_covid2202.csv"),
+        #         read.csv("yoko_covid_today.csv"))%>%
+        #   mutate(Date=as.Date(Date,format="%Y年%m月%d日"))%>%
+        #   filter(Date<"2021-12-08")
+        # write.csv(yoko_covid,"yoko_covid.csv",row.names = F,fileEncoding="UTF-8")
         sr=which(grepl("(男|女)|調査中",TD$Text2))
         n=1
         TDS <- data.frame(Date="",No=1:length(sr),Age="",Gender="",Hos="",City="")
