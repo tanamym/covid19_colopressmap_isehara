@@ -23,6 +23,7 @@ repeat{
       "https://www.pref.kanagawa.jp/docs/ga4/covid19/occurrence_list.html"
     while(TRUE){
       rhtml_top<-try(rvest::read_html(url_top,encoding="UTF-8"))
+      Sys.sleep(10)
       if(class(rhtml_top) != "try-error")break
     }
     
@@ -48,6 +49,7 @@ repeat{
 
       while(TRUE){
         rhtml<-try(rvest::read_html(url,encoding="UTF-8"))
+        Sys.sleep(10)
         if(class(rhtml) != "try-error")break
       }
       
@@ -317,6 +319,7 @@ repeat{
         "https://www.city.kawasaki.jp/350/page/0000115886.html"
       while (TRUE) {
         rhtml_top2<-try(rvest::read_html(url_top2,encoding="UTF-8"))
+        Sys.sleep(10)
         if(class(rhtml_top2) != "try-error")break
       }
       
@@ -515,6 +518,7 @@ repeat{
                       rename("html"=".")%>%
                       mutate(html=str_remove(html,"../../"))%>%
                       mutate(html=paste0("https://www.city.chigasaki.kanagawa.jp/",html)))
+        Sys.sleep(10)
         if(class(rhtml4) != "try-error")break
       }
       
@@ -702,6 +706,7 @@ repeat{
       #横須賀市####
       while(TRUE){
         HTML <- try(read_html("https://www.city.yokosuka.kanagawa.jp/3130/hasseijoukyou.html"))
+        Sys.sleep(10)
         if(class(HTML) != "try-error")break
       }
       #HTML <- try(read_html("https://www.city.yokosuka.kanagawa.jp/3130/hasseijoukyou_202201.html"))
@@ -723,6 +728,7 @@ repeat{
       while(TRUE){
          HT<-try(read_html(paste0("https://www.city.yokosuka.kanagawa.jp",
                        file)))
+         Sys.sleep(10)
          if(class(HT) != "try-error"){
            HT<-
              HT%>%
@@ -824,6 +830,7 @@ repeat{
         
         while(TRUE){
           yh <- try(read_html(paste0("https://www.city.yokosuka.kanagawa.jp",Ahref$html[i])))
+          Sys.sleep(10)
           if(class(yh) != "try-error")break
         }
         
@@ -1148,6 +1155,7 @@ repeat{
                            filter(str_detect(.,"covid"))%>%
                            #filter(str_detect(.,"covod"))%>%
                            mutate(flag=str_detect(.,Date)))
+         Sys.sleep(10)
          if(class(yoko_html1) != "try-error")break
         
       }
@@ -1180,6 +1188,7 @@ repeat{
                           data.frame()%>%
                           filter(str_detect(.,"pdf"))%>%
                           mutate(pdf=paste0("https://www.city.yokohama.lg.jp/city-info/koho-kocho/press/kenko/2021/",.)))
+          Sys.sleep(10)
           if(class(yoko_pdf) != "try-error")break
         }
         
@@ -1488,6 +1497,7 @@ repeat{
                          filter(str_detect(.,"pdf"))%>%
                          mutate(flag=str_detect(.,Date))%>%
                          mutate(pdf=str_remove(.,"^../..")))
+        Sys.sleep(10)
         if(class(saga_html) != "try-error")break
       }
       
@@ -1724,6 +1734,7 @@ repeat{
       #藤沢市####
       while(TRUE){
          HTML <- try(read_html("https://www.city.fujisawa.kanagawa.jp/hoken-j/corona_doukou_data.html"))
+         Sys.sleep(10)
          if(class(HTML) != "try-error")break
       }
      
@@ -2039,6 +2050,7 @@ repeat{
       #今日の神奈川県####
       while (TRUE) {
         HTML<-try(read_html("https://www.pref.kanagawa.jp/prs/list-2021-1-1.html"))
+        Sys.sleep(10)
         if(class(HTML) != "try-error")break
       }
       
@@ -2069,6 +2081,7 @@ repeat{
                      data.frame()%>%
                      filter(str_detect(.,".csv"))%>%
                      rename("csv"="."))
+          Sys.sleep(10)
           if(class(CSV) != "try-error")break
         }
         
