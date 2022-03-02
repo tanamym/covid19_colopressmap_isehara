@@ -307,7 +307,8 @@ repeat{
         filter(grepl(D2,html))%>%
         mutate(pdf=paste0("https://www.city.yokosuka.kanagawa.jp",html))
      if(nrow(Ahref)!=0){
-        TD <- data.frame()
+       if(nrow(Ahref2)!=0){
+         TD <- data.frame()
         for (p in Ahref2$pdf) {
           
           pdf<-pdf_text(p)
@@ -345,7 +346,7 @@ repeat{
         TD <-
           TD %>%
           mutate(Text2=stri_trans_nfkc(Text))
-        TD2<-TD%>%
+         TD2<-TD%>%
           mutate(s = str_replace_all(Text2,"^ +","")) %>%
           mutate(s = str_replace_all(s," +","_")) %>%
           tidyr::separate(s,into = c("No","性別","年代",
@@ -355,6 +356,9 @@ repeat{
           select(Date,No,性別,年代,職業等,患者確定日)%>%
           mutate(No=as.numeric(No))%>%
           arrange(Date,No)
+       }
+        
+       
         Table <-
           HTML %>%
           html_table() %>%
@@ -478,7 +482,6 @@ repeat{
 
         yokosuka<-yokosuka2%>%
           filter(!is.na(No))%>%
-          mutate(Date=Sys.Date())%>%
           rename("PR_Date"="Date","Fixed_Date2"="患者確定日")%>%
           mutate(Fixed_Date=PR_Date)%>%
           mutate(Fixed_Date2=paste("2022-",str_replace(Fixed_Date2,"月","-")))%>%
@@ -494,9 +497,7 @@ repeat{
       print("横須賀市を出力しました。")
       
       #横浜市####
-      
-  
-      #横浜市today####
+      #Date<-"0220"
       Date<-format(Sys.Date(),"%m%d")
       while(TRUE){
         yoko_html1<-try(read_html("https://www.city.yokohama.lg.jp/city-info/koho-kocho/press/kenko/")%>%
@@ -505,7 +506,8 @@ repeat{
                           data.frame()%>%
                           filter(str_detect(.,"covid"))%>%
                           #filter(str_detect(.,"covod"))%>%
-                          mutate(flag=str_detect(.,Date)))
+                          mutate(flag=str_detect(.,Date))%>%
+                          filter(flag==TRUE))
         Sys.sleep(10)
         if(class(yoko_html1) != "try-error")break
         
@@ -593,8 +595,9 @@ repeat{
           mutate(City=str_remove(City," ")) %>%
           arrange(desc(Date),desc(No))
         
-      
+        #D2<-"220220"
         D2<-format(Sys.Date(),"%y%m%d")
+        #YM<-"2202"
         YM<-format(Sys.Date(),"%y%m")
         if(!dir.exists(YM)){
           dir.create(YM)
@@ -997,6 +1000,7 @@ repeat{
                                            hos="kanagawa")%>%
                                     mutate(Fixed_Date2=str_remove(Fixed_Date2,"日"),
                                            Fixed_Date2=paste0("2022-",str_replace(Fixed_Date2,"月","-"))))
+              
               if(class(kanagawa_today) != "try-error")break
             }
             
@@ -1008,13 +1012,17 @@ repeat{
       }else{
         kanagawa_today<-data.frame()
       }
-      
-      
+      D2<-format(Sys.Date(),"%y%m%d")
+      YM<-format(Sys.Date(),"%y%m")
+      write.csv(kanagawa_today,paste0(YM,"/kanagawa",D2,".csv"),row.names = F)
+      LF<-list.files(path = YM,
+                     pattern="kanagawa",full.names = T)
+      kanagawa<-do.call(rbind,lapply(LF,read.csv))
       
       
       kanagawa2<-
         rbind(yokohama,sagamihara,fujisawa,
-              yokosuka,kanagawa_today) %>%
+              yokosuka,kanagawa) %>%
         mutate(Hospital_Pref ="神奈川県",
                Residential_Pref="神奈川県"
         )
@@ -1115,7 +1123,7 @@ repeat{
                Hos=as.character(Hos),
                hos=as.character(hos),
                note=as.character(note))
-      data<-bind_rows(data2,kanagawa2,kawasaki,chigasaki,yokohama0220,yo2)%>%
+      data<-bind_rows(data2,kanagawa2,kawasaki,chigasaki,yo2)%>%
         select(Fixed_Date,Hospital_Pref,Residential_City,Age,
                Sex,X,Y,PR_Date,Fixed_Date2,Hos,note,hos)%>%
         filter(Fixed_Date<Sys.Date())%>%
@@ -1130,7 +1138,7 @@ repeat{
         data%>%
         filter(Fixed_Date>=as.Date("2022-02-16"))
       if(format(Sys.time(),"%H")%in%c("17","18","19","20","21")){
-        data<-bind_rows(data2,kanagawa2,kawasaki,chigasaki,yokohama0220,yo2)%>%
+        data<-bind_rows(data2,kanagawa2,kawasaki,chigasaki,yo2)%>%
           select(Fixed_Date,Hospital_Pref,Residential_City,Age,
                  Sex,X,Y,PR_Date,Fixed_Date2,Hos,note,hos)%>%
           mutate(Age=str_remove(Age,"代"),
