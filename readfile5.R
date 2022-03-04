@@ -499,6 +499,7 @@ repeat{
       #横浜市####
       #Date<-"0220"
       Date<-format(Sys.Date(),"%m%d")
+      #Date<-format(Sys.Date()-1,"%m%d")
       while(TRUE){
         yoko_html1<-try(read_html("https://www.city.yokohama.lg.jp/city-info/koho-kocho/press/kenko/")%>%
                           html_nodes("a")%>%
@@ -513,8 +514,8 @@ repeat{
         
       }
       
-     
-      if(yoko_html1[1,2]==TRUE){
+     if(nrow(yoko_html1)!=0){
+        if(yoko_html1[1,2]==TRUE){
         while(TRUE){
           yoko_pdf<-try(read_html(paste0("https://www.city.yokohama.lg.jp",yoko_html1[1,1]))%>%
                           html_nodes("a")%>%
@@ -597,6 +598,7 @@ repeat{
         
         #D2<-"220220"
         D2<-format(Sys.Date(),"%y%m%d")
+        #D2<-format(Sys.Date()-1,"%y%m%d")
         #YM<-"2202"
         YM<-format(Sys.Date(),"%y%m")
         if(!dir.exists(YM)){
@@ -621,6 +623,8 @@ repeat{
         write.csv(yokohama,"yokohama.csv",row.names = F)
        
       }
+     }
+     
       
     
       print("横浜市を出力しました")
@@ -1014,7 +1018,10 @@ repeat{
       }
       D2<-format(Sys.Date(),"%y%m%d")
       YM<-format(Sys.Date(),"%y%m")
-      write.csv(kanagawa_today,paste0(YM,"/kanagawa",D2,".csv"),row.names = F)
+      if(nrow(kanagawa_today)!=0){
+        write.csv(kanagawa_today,paste0(YM,"/kanagawa",D2,".csv"),row.names = F)
+      }
+      
       LF<-list.files(path = YM,
                      pattern="kanagawa",full.names = T)
       kanagawa<-do.call(rbind,lapply(LF,read.csv))
@@ -1066,16 +1073,18 @@ repeat{
  
       if(nrow(yokohama%>%
               filter(PR_Date==Sys.Date()))==0){
+        
         while (TRUE) {
           yo<-try(fread("https://www.city.yokohama.lg.jp/kurashi/kenko-iryo/yobosesshu/kansensho/coronavirus/corona-data.files/141003_yokohama_covid19_patients.csv",
                         encoding="UTF-8")%>%
                     data.frame()%>%
                     mutate(記者発表日=as.Date(記者発表日))%>%
                     filter(記者発表日==Sys.Date()))
+          break
           if(class(yo) != "try-error")break
         }
-        
-        if(nrow(yo)!=0){
+        if(class(yo) != "try-error"){
+          if(nrow(yo)!=0){
           yo<-yo%>%
             rename("Residential_City"="市町村名",
                    "Fixed_Date"="記者発表日",
@@ -1096,6 +1105,8 @@ repeat{
             mutate(note=str_remove(note,"区"))
           write.csv(yo,paste0("yoko/yokohama",Sys.Date(),".csv"),row.names = F)
         }
+        }
+        
       }
       yo_list<-list.files("C:/data/covid/yoko",full.names = T)
       yo2<-do.call(rbind,lapply(yo_list,read.csv))%>%
