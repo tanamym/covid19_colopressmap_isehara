@@ -35,8 +35,12 @@ library(RCurl)
 #実行
 #time2<-
 #  Sys.time()
+<<<<<<< HEAD
 repeat{
 while(format(Sys.time(),"%H")=="13"){
+=======
+while(TRUE){
+>>>>>>> origin/main
 
   time<-
     Sys.time()
@@ -58,8 +62,11 @@ while(format(Sys.time(),"%H")=="13"){
         data.frame()
     }
     url<-html_top[hn,]
+<<<<<<< HEAD
     #url<-html_top[2,]
     #url<-html_top[3,]
+=======
+>>>>>>> origin/main
     rhtml<-rvest::read_html(url,encoding="UTF-8")
     #ファイルの該当する月
     month<-
@@ -74,7 +81,10 @@ while(format(Sys.time(),"%H")=="13"){
       mutate(month=str_replace_all(month,"月",""))%>%
       summarise(max=max(month))
     flag[hn,1]<-month$max
+<<<<<<< HEAD
     #flag[2,1]<-month$max
+=======
+>>>>>>> origin/main
     #ファイルの該当する日
     day<-
       rhtml%>%
@@ -86,7 +96,11 @@ while(format(Sys.time(),"%H")=="13"){
       rename("day"=".")%>%
       mutate(day=str_replace_all(day,"日.+","日"))
     flag[hn,2]<-day[1,1]
+<<<<<<< HEAD
     #flag[2,2]<-day[1,1]
+=======
+    
+>>>>>>> origin/main
     #年度？
     pdf<-
       rhtml%>%
@@ -220,10 +234,17 @@ while(format(Sys.time(),"%H")=="13"){
     #前回使用したURLに一致しなかった場合に実行
     if(html_top2!=html_top[1,]){
       kanagawa3<-
+<<<<<<< HEAD
         rbind(kanagawa5,kanagawa3)
     }
     
     kanagawa5<-
+=======
+        rbind(kanagawa2,kanagawa3)
+    }
+    
+    kanagawa2<-
+>>>>>>> origin/main
       res5%>%
       mutate(判明日 = ifelse(str_detect(判明日,"12月"),
                           paste0("2020-",str_replace(判明日,"月","-")),
@@ -266,7 +287,11 @@ while(format(Sys.time(),"%H")=="13"){
     
     #これまでのデータと作成したデータを結合
     kanagawa4<-
+<<<<<<< HEAD
       rbind(kanagawa1,kanagawa5,kanagawa3)
+=======
+      rbind(kanagawa1,kanagawa2,kanagawa3)
+>>>>>>> origin/main
     
     write.csv(kanagawa4,"kanagawa2.csv")
     print("神奈川県のデータを出力しました")
@@ -320,6 +345,7 @@ while(format(Sys.time(),"%H")=="13"){
         path<-
           "https://www.city.kawasaki.jp/350/cmsfiles/contents/0000115/115886/20210505.pdf"
       }
+<<<<<<< HEAD
       if(path=="https://www.pref.kanagawa.jp/documents/75248/20210517_kawasaki.pdf"){
         path<-
           "https://www.city.kawasaki.jp/350/cmsfiles/contents/0000115/115886/20210517.pdf"
@@ -332,6 +358,8 @@ while(format(Sys.time(),"%H")=="13"){
         path<-
           "https://www.city.kawasaki.jp/350/cmsfiles/contents/0000115/115886/20210617.pdf"
       }
+=======
+>>>>>>> origin/main
       if(pdf_text(path)[1]=="")print(paste("ファイル名:",path,"を取得出来ません"))
       kawa2<-data.frame()
       for (i in 1:length(pdf_text(path))) {
@@ -465,11 +493,14 @@ while(format(Sys.time(),"%H")=="13"){
           "https://www.city.chigasaki.kanagawa.jp/_res/projects/default_project/_page_/001/043/064/20210426co.pdf"
         
       }
+<<<<<<< HEAD
       if(path=="https://www.pref.kanagawa.jp/documents/75248/20210520_chigasaki.pdf"){
         path<-
           "https://www.city.chigasaki.kanagawa.jp/_res/projects/default_project/_page_/001/043/451/20210520co.pdf"
         
       }
+=======
+>>>>>>> origin/main
       if(pdf_text(path)[1]=="")print(paste("ファイル名:",path,"を取得出来ません"))
       chi4<-data.frame()
       #管内[0-9][0-9][0-9]例目|
@@ -590,8 +621,12 @@ while(format(Sys.time(),"%H")=="13"){
       rename("Fixed_Date"="発表日","Residential_City"="居住地") %>%
       select(-年代,-性別)%>%
       mutate(Residential_City = str_replace(Residential_City,"神奈川県",""))%>%
+<<<<<<< HEAD
       mutate(Fixed_Date=as.Date(Fixed_Date))%>%
       filter(Residential_City%in%c("横浜市","相模原市","藤沢市","横須賀市"))
+=======
+      mutate(Fixed_Date=as.Date(Fixed_Date))
+>>>>>>> origin/main
     
     kanagawa<-read.csv("kanagawa2.csv") %>%
       select(-X,-note)%>%
@@ -638,7 +673,11 @@ while(format(Sys.time(),"%H")=="13"){
       rename("Residential_City"="list")
     
     data<-bind_rows(data2,data3,kanagawa2,kawasaki,chigasaki)
+<<<<<<< HEAD
     write.csv(data,"coviddata.csv",row.names=F,fileEncoding="UTF-8")
+=======
+    write.csv(data,"coviddata.csv",row.names=F)
+>>>>>>> origin/main
     print("coviddata.csvを出力しました")
   }
   
@@ -654,10 +693,18 @@ while(format(Sys.time(),"%H")=="13"){
   #urlを保存
   html_top2<-html_top[1,]
   #6時間経過後最初に戻る
+<<<<<<< HEAD
   Sys.sleep(1800)
+=======
+  Sys.sleep(21600)
+>>>>>>> origin/main
   # while (time+60*60*12>Sys.time()) {
   #   
   # }
 }
 
+<<<<<<< HEAD
 }
+=======
+
+>>>>>>> origin/main

@@ -429,8 +429,16 @@ repeat{
               # mutate(確定日=ifelse(str_detect(確定日,"/"),
               #                   str_replace_all(確定日,"[^0-9/]",""),
               #                   確定日))%>%
+<<<<<<< HEAD
               mutate(確定日=ifelse(str_detect(確定日,"調査中"),NA,
                                        paste0("2021-",str_replace(確定日,"月","-"))),
+=======
+              mutate(確定日=ifelse(str_detect(確定日,"11"),
+                                paste0("2020-",str_replace(確定日,"月","-")),
+                                ifelse(str_detect(確定日,"12"),
+                                       paste0("2020-",str_replace(確定日,"月","-")),
+                                       paste0("2021-",str_replace(確定日,"月","-")))),
+>>>>>>> origin/main
                         確定日=str_replace(確定日,"日",""))%>%
               mutate(確定日=ifelse(str_detect(確定日,"/"),
                                 str_replace(確定日,"/","-"),
@@ -833,8 +841,12 @@ repeat{
         read.csv("yokosuka_202106.csv"),
         read.csv("yokosuka_202105.csv"),
         read.csv("yokosuka_202107.csv"),
+<<<<<<< HEAD
         read.csv("yokosuka_202108.csv"),
         read.csv("yokosuka_20210815.csv")
+=======
+        read.csv("yokosuka_202108.csv")
+>>>>>>> origin/main
         )%>%
         filter(!is.na(No))%>%
         rename("PR_Date"="Date","Fixed_Date2"="患者確定日")%>%
@@ -938,6 +950,7 @@ repeat{
         mutate(Date=as.Date(Date,format="%Y年%m月%d日")) %>%
         mutate(Hos="横浜") %>%
         arrange(desc(Date),desc(No))
+<<<<<<< HEAD
       if(format(Sys.Date(),"%m")=="08"){
         TDS<-TDS%>%
           rbind(read.csv("yokohama0819covid-19.csv")%>%
@@ -960,6 +973,8 @@ repeat{
           filter(No!=""))%>%
           arrange(desc(Date))
       }
+=======
+>>>>>>> origin/main
       write.csv(TDS,"yokohama202108.csv",row.names = F)
       #横浜市today####
       Date<-format(Sys.Date(),"%m%d")
@@ -1041,6 +1056,7 @@ repeat{
           mutate(Date=as.Date(Date,format="%Y年%m月%d日")) %>%
           mutate(Hos="横浜") %>%
           arrange(desc(Date),desc(No))
+<<<<<<< HEAD
         
         yokohamatoday<-TDS
         if(Date=="0819"){
@@ -1052,6 +1068,10 @@ repeat{
             filter(No!="No")%>%
             filter(No!="")
         }
+=======
+
+        yokohamatoday<-TDS
+>>>>>>> origin/main
         write.csv( yokohamatoday,"yokohamatoday.csv",row.names = F)
       }else{
         #yokohamatoday<-data.frame()
@@ -1400,8 +1420,13 @@ repeat{
       n=1
       TDS <- data.frame(Date="",No=1:length(sr),Age="",Gender="",Hos="",City="")
       d=1
+<<<<<<< HEAD
 
       for (n in 1:length(sr)) {
+=======
+      for (n in 1:length(sr)) {
+        # for (n in 413:430) {
+>>>>>>> origin/main
         tds <- paste0(TD$Text2[sr[n]],collapse = " ")
         
         re<-regexpr("^[[:digit:]]+ |^ [[:digit:]] ",tds)
@@ -1412,7 +1437,11 @@ repeat{
         at<-attr(re,"match.length")
         TDS$Age[n]=substring(tds,re,re+at-1)
         
+<<<<<<< HEAD
         TDS$no[n] <- as.numeric(substring(tds,re-7,re-1))
+=======
+        TDS$no[n] <- as.numeric(substring(tds,re-6,re-1))
+>>>>>>> origin/main
         
         if(n>1)
           if(TDS$no[n]==1|sr[n]-sr[n-1]>5) #1番または改ページ
@@ -1428,14 +1457,36 @@ repeat{
         re<-regexpr("[^ ]+[市区町村都]|[^ ]+[内外]",tds)
         at<-attr(re,"match.length")
         TDS$City[n]=substring(tds,re,re+at-1)
+<<<<<<< HEAD
 
       }
 
+=======
+        
+        #print(n)
+        #print(TDS$No[n])
+      }
+      
+      te <-
+        TDS %>%
+        count(Date)
+      te <-
+        TD[sr,] %>%
+        mutate(n=1:n())
+      te2 <-
+        TD[day,] %>%
+        mutate(n=1:n())
+>>>>>>> origin/main
       
       TDS2 <-
         TDS %>%
         # filter(!is.na(No)) %>%
         mutate(Hos="藤沢") %>%
+<<<<<<< HEAD
+=======
+        mutate(Date=ifelse(No>=4458&No<=4480,"2021年08月14日",Date))%>%
+        mutate(Date=ifelse(No>=4516&No<=4564,"2021年08月15日",Date))%>%
+>>>>>>> origin/main
         mutate(Date=as.Date(Date,format="%Y年%m月%d日")) %>%
         arrange(desc(No),desc(Date))
       
@@ -1665,7 +1716,11 @@ repeat{
     #urlを保存
     html_top2<-html_top[1,]
     #30分経過後最初に戻る
+<<<<<<< HEAD
     #Sys.sleep(300)
+=======
+    Sys.sleep(600)
+>>>>>>> origin/main
     # while (time+60*60*12>Sys.time()) {
     #   
     # }

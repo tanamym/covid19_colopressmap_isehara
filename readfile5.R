@@ -173,13 +173,17 @@ repeat{
                       mutate(html=paste0("https://www.city.chigasaki.kanagawa.jp/",html)))
         Sys.sleep(10)
         if(class(rhtml4) != "try-error")break
+<<<<<<< HEAD
         break
+=======
+>>>>>>> origin/main
       }
       
       chigasaki2<-data.frame()
       D<-Sys.Date()%>%
         str_remove_all("-")%>%
         str_remove_all("2021|2022")
+<<<<<<< HEAD
       if(!str_detect(rhtml4[1,1],D)){
         url_top3<-
           "https://www.city.chigasaki.kanagawa.jp/koho/1030702/1038773/index.html"
@@ -216,6 +220,9 @@ repeat{
           break
         }
       }
+=======
+
+>>>>>>> origin/main
       chi4<-data.frame()
       if(str_detect(rhtml4[1,1],D)){
         path2<-rhtml4[1,1]
@@ -265,6 +272,7 @@ repeat{
                  "Age"="年代","Sex"="性別","PR_Date"="発表日")%>%
           mutate(Fixed_Date=PR_Date)%>%
           filter(!str_detect(Fixed_Date,"NULL"))
+<<<<<<< HEAD
         D2<-format(Sys.Date(),"%y%m%d")
         YM<-format(Sys.Date(),"%y%m")
         if(!dir.exists(YM)){
@@ -275,6 +283,16 @@ repeat{
       }
  
    
+=======
+      }
+ 
+      D2<-format(Sys.Date(),"%y%m%d")
+      YM<-format(Sys.Date(),"%y%m")
+      if(!dir.exists(YM)){
+        dir.create(YM)
+      }
+      write.csv(chigasaki2,paste0(YM,"/chigasaki",D2,".csv"),row.names = F)
+>>>>>>> origin/main
       LF<-list.files(path = YM,
                      pattern="chigasaki",full.names = T)
       chigasaki<-do.call(rbind,lapply(LF,read.csv))
@@ -397,6 +415,7 @@ repeat{
        }
         
        
+<<<<<<< HEAD
         # Table <-
         #   HTML %>%
         #   html_table() %>%
@@ -404,6 +423,15 @@ repeat{
         #   select(-starts_with("No..")) %>%
         #   rename(No="No.") %>%
         #   mutate(No=as.numeric(No))
+=======
+        Table <-
+          HTML %>%
+          html_table() %>%
+          data.frame() %>%
+          select(-starts_with("No..")) %>%
+          rename(No="No.") %>%
+          mutate(No=as.numeric(No))
+>>>>>>> origin/main
         TD <- data.frame()
         
         for (i in 1:nrow(Ahref)) {
@@ -499,10 +527,16 @@ repeat{
         
         
         TDS3 <-
+<<<<<<< HEAD
           # Table %>%
           # select(No,患者確定日,年代,性別,職業等)%>%
           #rbind(TD2%>%select(-Date))%>%
           TD2%>%select(-Date)%>%
+=======
+          Table %>%
+          select(No,患者確定日,年代,性別,職業等)%>%
+          rbind(TD2%>%select(-Date))%>%
+>>>>>>> origin/main
           full_join(TDS2)%>%
           filter(!is.na(Age))%>%
           #filter(Date>=as.Date(paste0(D1,"01"),"%Y%m%d"))%>%
@@ -760,6 +794,7 @@ repeat{
             mutate(Hos="相模原") %>%
             mutate(Date=as.Date(Date,format="%Y年%m月%d日")) %>%
             arrange(desc(Date),desc(No))
+<<<<<<< HEAD
           D2<-format(Sys.Date(),"%y%m%d")
           YM<-format(Sys.Date(),"%y%m")
           if(!dir.exists(YM)){
@@ -770,6 +805,17 @@ repeat{
           
         }
         
+=======
+          
+          
+        }
+        D2<-format(Sys.Date(),"%y%m%d")
+        YM<-format(Sys.Date(),"%y%m")
+        if(!dir.exists(YM)){
+          dir.create(YM)
+        }
+        write.csv(TDS2,paste0(YM,"/sagamihara",D2,".csv"),row.names = F)
+>>>>>>> origin/main
         LF<-list.files(path = YM,
                        pattern="sagamihara",full.names = T)
         sagamihara<-do.call(rbind,lapply(LF,read.csv))%>%
@@ -810,7 +856,11 @@ repeat{
       
       Fujisawa <-
         Ahref %>%
+<<<<<<< HEAD
         filter(grepl("[[:digit:]]+_pr.+pdf$",pdf))
+=======
+        filter(grepl("fujisawa[[:digit:]]+.+pdf$",pdf))
+>>>>>>> origin/main
       
       p=Fujisawa$pdf[1]
       
@@ -835,6 +885,7 @@ repeat{
       
       TD <-
         TD %>%
+<<<<<<< HEAD
         mutate(Text2=stri_trans_nfkc(Text))%>%
         mutate(Text2=str_remove(Text2,"^ "))
       #空白までの文字を拾う
@@ -842,21 +893,47 @@ repeat{
       n=1
       TDS <- data.frame(Date="",No=1:length(sr),Age="",Gender="",Hos="",City="",Jobs="",no="")%>%
         mutate(Date=Sys.Date())
+=======
+        mutate(Text2=stri_trans_nfkc(Text))
+      #空白までの文字を拾う
+      sr=which(grepl("^ {0,1}[[:digit:]]+ ",TD$Text2))
+      n=1
+      TDS <- data.frame(Date="",No=1:length(sr),Age="",Gender="",Hos="",City="",Jobs="",no="")
+>>>>>>> origin/main
       for (n in 1:length(sr)) {
         # for (n in 413:430) {
         (tds <- paste0(TD$Text2[sr[n]],collapse = " "))
         
+<<<<<<< HEAD
+=======
+        re<-regexpr("  +",tds)
+        at<-attr(re,"match.length")
+        TDS$No[n]=as.numeric(substring(tds,1,re-1))
+        tds <- substring(tds,re+at,nchar(tds))
+        
+        #日付がある行
+        if(at<7){
+          re<-regexpr(" +",tds)
+          at<-attr(re,"match.length")
+          TDS$Date[n]=(substring(tds,1,re-1))
+          tds <- substring(tds,re+at,nchar(tds))
+        }
+        
+>>>>>>> origin/main
         re<-regexpr(" +",tds)
         at<-attr(re,"match.length")
         TDS$no[n]=as.numeric(substring(tds,1,re-1))
         tds <- substring(tds,re+at,nchar(tds))
         
+<<<<<<< HEAD
         re<-regexpr("  +",tds)
         at<-attr(re,"match.length")
         TDS$No[n]=as.numeric(substring(tds,1,re-3))
         tds <- substring(tds,re+at,nchar(tds))
         
        
+=======
+>>>>>>> origin/main
         re<-regexpr(" +",tds)
         at<-attr(re,"match.length")
         TDS$Age[n]=(substring(tds,1,re-1))
@@ -877,6 +954,7 @@ repeat{
         TDS$Jobs[n]=(substring(tds,1,re-1))
         if(re<0)
           TDS$Jobs[n]=tds
+<<<<<<< HEAD
         # #日付がある行
         # if(at<7){
         #   re<-regexpr(" +",tds)
@@ -884,6 +962,8 @@ repeat{
         #   TDS$Date[n]=Sys.Date()
         #   tds <- substring(tds,re+at,nchar(tds))
         # }
+=======
+>>>>>>> origin/main
         tds <- substring(tds,re+at,nchar(tds))
         
         print(c(n,TDS$No[n],TDS$Date[n]))
@@ -892,6 +972,7 @@ repeat{
         TDS %>%
         mutate(no=as.numeric(no))
       
+<<<<<<< HEAD
       # #日番号(no)がNAのところに次の値-1を入れる　NAがなくなるまで
       # kb=which(is.na(TDS$no))
       # while(length(kb)>0){
@@ -950,17 +1031,65 @@ repeat{
         #               read.csv("fujisawa202104.csv"),
         #               read.csv("fujisawa202110.csv"))%>%
         do.call(rbind,lapply(LF,read.csv))%>%
+=======
+      #日番号(no)がNAのところに次の値-1を入れる　NAがなくなるまで
+      kb=which(is.na(TDS$no))
+      while(length(kb)>0){
+        for (n in kb) {
+          TDS$no[n]=TDS$no[n+1]-1
+        }
+        kb=which(is.na(TDS$no))
+      }
+      day=which(grepl("202.年..??月..??日",TD$Text2))
+      re<-regexpr("202.年..??月..??日",TD$Text2[day])
+      at<-attr(re,"match.length")
+      dayl= unique(substring(TD$Text2[day],re,re+at-1))
+      n=1
+      d=1
+      TDS$Date[n]=dayl[d]
+      #基本的に日番号=1のときに日付ずらす
+      #既に入っている日付とずれたときはずらす
+      for (n in 2:length(sr)) {
+        dn=TDS$no[n]
+        dt=TDS$Date[n]
+        
+        if(dn==1|(dt!=""&dt!=dayl[d])){ 
+          d=d+1
+        }
+      
+        TDS$Date[n]=dayl[d]
+        print(c(n,TDS$No[n],TDS$Date[n]))
+      }
+      
+    
+      
+      TDS2 <-
+        TDS %>%
+        mutate(Hos="藤沢") %>%
+        mutate(Date=as.Date(Date,format="%Y年%m月%d日")) %>%
+        arrange(desc(No),desc(Date))%>%
+        select(Date,No,Age,Gender,Hos,City,no)
+      
+      
+      write.csv(TDS2,"fujisawa202110.csv",row.names = F)
+      fujisawa<-rbind(read.csv("fujisawa202103.csv"),
+                      read.csv("fujisawa202104.csv"),
+                      read.csv("fujisawa202110.csv"))%>%
+>>>>>>> origin/main
         rename("PR_Date"="Date","Sex"="Gender","Residential_City"="City")%>%
         mutate(Fixed_Date=PR_Date,
                Fixed_Date2=NA)%>%
         mutate(Age=str_remove(Age,"代"))%>%
         arrange(desc(Fixed_Date))%>%
         mutate(Age=str_replace(Age,"10歳","10歳未満"))
+<<<<<<< HEAD
       write.csv(fujisawa,paste0("YM/fujisawa",YM,".csv"),row.names = F)
       LF<-list.files(path = "YM",
                      pattern="fujisawa",full.names = T)
       fujisawa<-do.call(rbind,lapply(LF,read.csv))
 
+=======
+>>>>>>> origin/main
       write.csv(fujisawa,"fujisawa.csv",row.names = F)
       print("藤沢市を出力しました")
      #データ作成####
@@ -992,7 +1121,11 @@ repeat{
         select(-no,-No)%>%
         mutate(note=NA)%>%
         mutate(hos="fujisawa")
+<<<<<<< HEAD
 
+=======
+      
+>>>>>>> origin/main
       #今日の神奈川県####
       while (TRUE) {
         HTML<-try(read_html("https://www.pref.kanagawa.jp/prs/list-2021-1-1.html"))
@@ -1185,6 +1318,10 @@ repeat{
                note=as.character(note))%>%
         filter(Fixed_Date>="2022-03-01")
       data2<-fread("data2022_2.csv",encoding = "UTF-8")%>%
+<<<<<<< HEAD
+=======
+        filter(Hos!="藤沢")%>%
+>>>>>>> origin/main
         mutate(Fixed_Date2=as.Date(Fixed_Date2),
                Hospital_Pref=as.character(Hospital_Pref),
                Residential_City=as.character(Residential_City),
@@ -1195,6 +1332,7 @@ repeat{
                Hos=as.character(Hos),
                hos=as.character(hos),
                note=as.character(note))
+<<<<<<< HEAD
       fujisawa2<-fread("data2022.csv",encoding = "UTF-8")%>%
         filter(Hos=="藤沢")%>%
         mutate(Fixed_Date2=as.Date(Fixed_Date2),
@@ -1209,6 +1347,9 @@ repeat{
                note=as.character(note))%>%
         filter(Fixed_Date<="2022-03-07")
       data<-bind_rows(data2,kanagawa2,kawasaki,chigasaki,yo2,fujisawa2)%>%
+=======
+      data<-bind_rows(data2,kanagawa2,kawasaki,chigasaki,yo2)%>%
+>>>>>>> origin/main
         select(Fixed_Date,Hospital_Pref,Residential_City,Age,
                Sex,X,Y,PR_Date,Fixed_Date2,Hos,note,hos)%>%
         filter(Fixed_Date<Sys.Date())%>%
@@ -1221,6 +1362,7 @@ repeat{
 
       data2022<-
         data%>%
+<<<<<<< HEAD
         filter(Fixed_Date>=as.Date("2022-03-01"))
       # data20220228<-
       #   data%>%
@@ -1229,6 +1371,11 @@ repeat{
       # write.csv(data20220228,"data20220228.csv",row.names=F,fileEncoding="UTF-8")
       if(format(Sys.time(),"%H")%in%c("17","18","19","20","21")){
         data<-bind_rows(data2,kanagawa2,kawasaki,chigasaki,yo2,fujisawa2)%>%
+=======
+        filter(Fixed_Date>=as.Date("2022-02-16"))
+      if(format(Sys.time(),"%H")%in%c("17","18","19","20","21")){
+        data<-bind_rows(data2,kanagawa2,kawasaki,chigasaki,yo2)%>%
+>>>>>>> origin/main
           select(Fixed_Date,Hospital_Pref,Residential_City,Age,
                  Sex,X,Y,PR_Date,Fixed_Date2,Hos,note,hos)%>%
           mutate(Age=str_remove(Age,"代"),
@@ -1239,7 +1386,11 @@ repeat{
 
         data2022<-
           data%>%
+<<<<<<< HEAD
           filter(Fixed_Date>=as.Date("2022-03-01"))
+=======
+          filter(Fixed_Date>=as.Date("2022-02-16"))
+>>>>>>> origin/main
 
       }
 
